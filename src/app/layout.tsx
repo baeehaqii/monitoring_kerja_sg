@@ -12,6 +12,9 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Monitoring Program Sapphire Grup",
   description: "Monitoring Program Kerja Sapphire Grup by Siproper",
+  icons: {
+    icon: "/fav_sg.png",
+  },
 };
 
 export default function RootLayout({

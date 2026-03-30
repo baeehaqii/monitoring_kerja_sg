@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Settings,
   LogOut,
-  Gem,
   Bell,
   Users,
   MessageCircleQuestion,
@@ -57,9 +56,7 @@ export function Sidebar({
       {/* Logo */}
       <div className="flex items-center justify-between border-b border-border h-[72px] px-5 gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
-            <Gem className="w-5 h-5 text-white" />
-          </div>
+          <img src="/logo-siproper.png" alt="Logo Sapphire Grup" className="h-9 w-auto object-contain" />
           <div className="min-w-0">
             <p className="font-semibold text-base text-foreground leading-tight">
               Sapphire Grup

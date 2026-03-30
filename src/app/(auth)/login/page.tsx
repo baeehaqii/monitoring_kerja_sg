@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Gem, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,8 +41,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur mb-4">
-            <Gem className="w-7 h-7 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src="/logo-siproper.png" alt="Logo Sapphire Grup" className="h-20 w-auto object-contain drop-shadow-lg" />
           </div>
           <h1 className="text-2xl font-bold text-white">Sapphire Grup</h1>
           <p className="text-sm text-white/60 mt-1">Monitoring Program Kerja · by Siproper</p>

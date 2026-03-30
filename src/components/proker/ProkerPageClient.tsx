@@ -12,6 +12,7 @@ import { AddActionPlanModal } from "./AddActionPlanModal";
 import { TimelineGrid } from "./TimelineGrid";
 import { EditProkerModal } from "./EditProkerModal";
 import { EditActionPlanModal } from "./EditActionPlanModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useRouter } from "next/navigation";
 
 type Week = { id: string; label: string; weekNumber: number; periodId: string };
@@ -67,6 +68,9 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
   const [editProkerOpen, setEditProkerOpen] = useState<ProgramKerja | null>(null);
   const [editAPOpen, setEditAPOpen] = useState<{ actionPlan: ActionPlan; strategy: Strategy } | null>(null);
 
+  const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; title: string; description: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(userRole);
 
   const allWeeks = periods.flatMap((p) => p.weeks);
@@ -104,16 +108,48 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
     });
   }
 
-  async function deleteProker(id: string) {
-    if (!confirm("Hapus Program Kerja ini beserta semua action plan-nya?")) return;
-    await fetch(`/api/proker/${id}`, { method: "DELETE" });
-    router.refresh();
+  function deleteProker(pk: ProgramKerja) {
+    setDeleteTarget({
+      type: "proker",
+      id: pk.id,
+      title: "Hapus Program Kerja?",
+      description: `Apakah Anda yakin ingin menghapus program kerja "${pk.name}" beserta seluruh isinya? Data tidak dapat dikembalikan.`,
+    });
   }
 
-  async function deleteActionPlan(id: string) {
-    if (!confirm("Hapus action plan ini?")) return;
-    await fetch(`/api/action-plans/${id}`, { method: "DELETE" });
-    router.refresh();
+  function deleteActionPlan(ap: ActionPlan) {
+    setDeleteTarget({
+      type: "actionPlan",
+      id: ap.id,
+      title: "Hapus Action Plan?",
+      description: `Apakah Anda yakin ingin menghapus action plan "${ap.name}"? Data tidak dapat dikembalikan.`,
+    });
+  }
+
+  function deleteStrategy(strategy: Strategy) {
+    setDeleteTarget({
+      type: "strategy",
+      id: strategy.id,
+      title: "Hapus Strategi?",
+      description: `Apakah Anda yakin ingin menghapus strategi "${strategy.name}" beserta semua di dalamnya? Data tidak dapat dikembalikan.`,
+    });
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const { type, id } = deleteTarget;
+      const url =
+        type === "strategy" ? `/api/strategies/${id}`
+        : type === "proker" ? `/api/proker/${id}`
+        : `/api/action-plans/${id}`;
+      await fetch(url, { method: "DELETE" });
+      setDeleteTarget(null);
+      router.refresh();
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -193,6 +229,14 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
                         Program Kerja
                       </Button>
                     )}
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteStrategy(strategy); }}
+                        className="text-xs text-red-500 hover:text-red-700 px-2 font-medium transition-colors"
+                      >
+                        Hapus
+                      </button>
+                    )}
                     {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                   </div>
                 </div>
@@ -247,7 +291,7 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
                                       <Pencil className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); deleteProker(pk.id); }}
+                                      onClick={(e) => { e.stopPropagation(); deleteProker(pk); }}
                                       className="text-xs text-red-400 hover:text-red-600 px-1 font-medium transition-colors"
                                     >
                                       Hapus
@@ -306,7 +350,7 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
                                                 <Pencil className="w-3.5 h-3.5" />
                                               </button>
                                               <button
-                                                onClick={() => deleteActionPlan(ap.id)}
+                                                onClick={() => deleteActionPlan(ap)}
                                                 className="text-slate-400 hover:text-red-600 p-1 font-bold text-sm transition-colors"
                                                 title="Hapus Action Plan"
                                               >
@@ -375,6 +419,14 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
           onSuccess={() => { setEditAPOpen(null); router.refresh(); }}
         />
       )}
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title={deleteTarget?.title || ""}
+        description={deleteTarget?.description || ""}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
