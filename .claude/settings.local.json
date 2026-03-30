@@ -5,7 +5,14 @@
       "Bash(python3 -c \":*)",
       "Bash(pip3 install:*)",
       "Bash(python3:*)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(npx prisma:*)",
+      "Bash(next --version)",
+      "Bash(npm install:*)",
+      "Bash(npx next:*)",
+      "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/*.*)",
+      "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/src/app/\\\\\\(dashboard\\\\\\)/)",
+      "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/src/app/\\\\\\(dashboard\\\\\\)/weekly/)"
     ]
   }
 }

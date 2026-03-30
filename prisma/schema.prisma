@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String     @id @default(cuid())
+  name           String
+  email          String     @unique
+  password       String
+  role           UserRole   @default(MEMBER)
+  division       Division?  @relation(fields: [divisionId], references: [id])
+  divisionId     String?
+  whatsappNumber String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  reminders      Reminder[]
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MEMBER
+}
+
+model Division {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  users      User[]
+  strategies Strategy[]
+  createdAt  DateTime   @default(now())
+}
+
+model Period {
+  id         String     @id @default(cuid())
+  year       Int
+  month      Int
+  name       String
+  startDate  DateTime
+  endDate    DateTime
+  weeks      Week[]
+  strategies Strategy[]
+  createdAt  DateTime   @default(now())
+
+  @@unique([year, month])
+}
+
+model Week {
+  id             String           @id @default(cuid())
+  period         Period           @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  periodId       String
+  weekNumber     Int
+  startDay       Int
+  endDay         Int
+  label          String
+  startDate      DateTime
+  endDate        DateTime
+  taskTimelines  TaskTimeline[]
+  weeklyProgress WeeklyProgress[]
+
+  @@unique([periodId, weekNumber])
+}
+
+model Strategy {
+  id           String         @id @default(cuid())
+  division     Division       @relation(fields: [divisionId], references: [id])
+  divisionId   String
+  period       Period         @relation(fields: [periodId], references: [id])
+  periodId     String
+  number       Int
+  name         String
+  programKerja ProgramKerja[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([divisionId, periodId, number])
+}
+
+model ProgramKerja {
+  id              String       @id @default(cuid())
+  strategy        Strategy     @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategyId      String
+  number          Int
+  name            String
+  targetDate      DateTime?
+  keterangan      Keterangan?
+  raciAccountable String?
+  raciResponsible String?
+  raciConsulted   String?
+  raciInformed    String?
+  actionPlans     ActionPlan[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([strategyId, number])
+}
+
+model ActionPlan {
+  id             String           @id @default(cuid())
+  programKerja   ProgramKerja     @relation(fields: [programKerjaId], references: [id], onDelete: Cascade)
+  programKerjaId String
+  number         Int
+  name           String
+  taskTimelines  TaskTimeline[]
+  weeklyProgress WeeklyProgress[]
+  reminders      Reminder[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([programKerjaId, number])
+}
+
+model TaskTimeline {
+  id           String     @id @default(cuid())
+  actionPlan   ActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  actionPlanId String
+  week         Week       @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  weekId       String
+  isPlanned    Boolean    @default(false)
+
+  @@unique([actionPlanId, weekId])
+}
+
+model WeeklyProgress {
+  id              String     @id @default(cuid())
+  actionPlan      ActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  actionPlanId    String
+  week            Week       @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  weekId          String
+  currentProgress String?
+  nextStep        String?
+  status          TaskStatus @default(NOT_STARTED)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([actionPlanId, weekId])
+}
+
+enum TaskStatus {
+  DONE
+  ON_PROGRESS
+  NOT_STARTED
+  DELAY
+}
+
+enum Keterangan {
+  PARTNER
+  VENDOR
+  KOLABORATOR
+  LAINNYA
+}
+
+model Reminder {
+  id           String     @id @default(cuid())
+  actionPlan   ActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  actionPlanId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  reminderDate DateTime
+  message      String
+  sent         Boolean    @default(false)
+  sentAt       DateTime?
+  createdAt    DateTime   @default(now())
+}
