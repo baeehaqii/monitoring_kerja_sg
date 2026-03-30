@@ -1,0 +1,50 @@
+name: Deploy to aaPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            PROJECT_DIR="/www/wwwroot/task-sg.findy.my.id"
+            cd $PROJECT_DIR
+
+            echo "==> Pulling latest code..."
+            git pull origin main
+
+            echo "==> Installing dependencies..."
+            npm install --frozen-lockfile
+
+            echo "==> Generating Prisma client..."
+            npx prisma generate
+
+            echo "==> Running database migrations..."
+            npx prisma migrate deploy
+
+            echo "==> Building Next.js app..."
+            npm run build
+
+            echo "==> Restarting app (aaPanel PM2)..."
+            # aaPanel manages Node projects via PM2 internally
+            # Coba restart dengan nama yang mungkin dipakai aaPanel
+            pm2 restart task-sg 2>/dev/null || pm2 restart tasksg 2>/dev/null || pm2 start ecosystem.config.js
+
+            echo "==> Deploy complete!"
