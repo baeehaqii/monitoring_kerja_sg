@@ -203,14 +203,14 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
           {filtered.map((strategy) => {
             const isExpanded = expandedStrategies.has(strategy.id);
             return (
-              <Card key={strategy.id} padding={false}>
+              <Card key={strategy.id} padding={false} className="border-l-[5px] border-l-red-600 shadow-md hover:shadow-lg transition-shadow bg-white overflow-hidden">
                 {/* Strategy Header */}
                 <div
-                  className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-slate-50 rounded-xl transition-colors"
+                  className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50 transition-colors"
                   onClick={() => toggleStrategy(strategy.id)}
                 >
-                  <div className="w-7 h-7 rounded-lg bg-[#e8f0fe] flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-[#0f52ba]">{strategy.number}</span>
+                  <div className="w-8 h-8 rounded-lg bg-red-100/80 flex items-center justify-center flex-shrink-0 ring-1 ring-red-200">
+                    <span className="text-sm font-bold text-red-600">{strategy.number}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">{strategy.name}</p>
@@ -243,22 +243,29 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
 
                 {/* Program Kerja List */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100">
+                  <div className="border-t border-slate-200 bg-slate-50 relative">
+                    {/* Visual left line connector */}
+                    <div className="absolute left-[36px] top-0 bottom-0 w-px bg-slate-200 z-0"></div>
+
                     {strategy.programKerja.length === 0 ? (
-                      <p className="text-sm text-slate-400 text-center py-5">Belum ada Program Kerja</p>
+                      <p className="text-sm text-slate-400 text-center py-5 relative z-10">Belum ada Program Kerja</p>
                     ) : (
                       strategy.programKerja.map((pk) => {
                         const pkExpanded = expandedProkers.has(pk.id);
                         const keterangan = KETERANGAN_OPTIONS.find((k) => k.value === pk.keterangan);
                         return (
-                          <div key={pk.id} className="border-b border-slate-50 last:border-0">
+                          <div key={pk.id} className="border-b border-slate-200 last:border-0 relative z-10 hover:bg-slate-100/50 transition-colors">
                             {/* PK Header */}
                             <div
-                              className="flex items-center gap-3 px-5 py-3 pl-10 cursor-pointer hover:bg-slate-50 transition-colors"
+                              className="flex items-center gap-3 pr-5 pl-12 py-3.5 cursor-pointer transition-colors relative"
                               onClick={() => toggleProker(pk.id)}
                             >
-                              <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-semibold text-slate-600">{pk.number}</span>
+                              <div className="relative">
+                                {/* Connector arm from Strategy line */}
+                                <div className="absolute right-full top-1/2 w-[12px] h-px bg-slate-300 -translate-y-1/2"></div>
+                                <div className="w-7 h-7 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center flex-shrink-0 z-10 relative">
+                                  <span className="text-xs font-bold text-slate-700">{pk.number}</span>
+                                </div>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-slate-800 truncate">{pk.name}</p>
@@ -304,15 +311,18 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
 
                             {/* Action Plans */}
                             {pkExpanded && (
-                              <div className="px-5 pb-3 pl-16 bg-slate-50/50">
+                              <div className="relative pr-5 pb-4 pl-[88px] bg-slate-100/80 border-t border-slate-200/60 pt-3 shadow-inner">
+                                {/* Vertical line dropping from PK badge */}
+                                <div className="absolute left-[62px] top-0 bottom-6 w-px bg-slate-300 z-0"></div>
+
                                 {/* RACI Row */}
                                 {(pk.raciAccountable || pk.raciResponsible) && (
                                   <div className="flex flex-wrap gap-4 py-2 mb-2 border-b border-slate-100 text-xs">
-                                    {pk.raciAccountable && (
-                                      <span><span className="font-semibold text-slate-600">A:</span> <span className="text-slate-500">{pk.raciAccountable}</span></span>
-                                    )}
                                     {pk.raciResponsible && (
                                       <span><span className="font-semibold text-slate-600">R:</span> <span className="text-slate-500">{pk.raciResponsible}</span></span>
+                                    )}
+                                    {pk.raciAccountable && (
+                                      <span><span className="font-semibold text-slate-600">A:</span> <span className="text-slate-500">{pk.raciAccountable}</span></span>
                                     )}
                                     {pk.raciConsulted && (
                                       <span><span className="font-semibold text-slate-600">C:</span> <span className="text-slate-500">{pk.raciConsulted}</span></span>
@@ -324,16 +334,20 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
                                 )}
 
                                 {pk.actionPlans.length === 0 ? (
-                                  <p className="text-xs text-slate-400 py-2">Belum ada Action Plan</p>
+                                  <p className="text-xs text-slate-400 py-3">Belum ada Action Plan</p>
                                 ) : (
-                                  <div className="space-y-1 py-1">
+                                  <div className="space-y-2 py-1">
                                     {pk.actionPlans.map((ap) => {
                                       const status = ap.weeklyProgress?.[0]?.status ?? "NOT_STARTED";
                                       const plannedWeekIds = ap.taskTimelines.map((t) => t.weekId);
                                       return (
-                                        <div key={ap.id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white transition-colors group">
-                                          <span className="text-xs text-slate-400 w-5 flex-shrink-0">{ap.number}</span>
-                                          <span className="flex-1 text-sm text-slate-700 truncate">{ap.name}</span>
+                                        <div key={ap.id} className="relative z-10 flex items-center gap-3 py-2 px-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-colors group">
+                                          {/* Connector arm from PK line */}
+                                          <div className="absolute right-full top-1/2 w-[26px] h-px bg-slate-300 -translate-y-1/2"></div>
+                                          <div className="w-6 h-6 rounded bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-xs font-semibold text-slate-500">{ap.number}</span>
+                                          </div>
+                                          <span className="flex-1 text-sm font-medium text-slate-700 truncate">{ap.name}</span>
                                           <TimelineGrid
                                             allWeeks={allWeeks}
                                             plannedWeekIds={plannedWeekIds}

@@ -30,7 +30,7 @@ export default async function DashboardLayout({
         <div className="lg:hidden flex items-center gap-3 px-4 h-[60px] bg-white border-b border-border shrink-0">
           <MobileSidebarWrapper {...sidebarProps} />
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-6 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-6 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             </div>
             <p className="font-semibold text-sm text-foreground truncate">Sapphire Grup</p>

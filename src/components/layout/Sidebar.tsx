@@ -59,10 +59,10 @@ export function Sidebar({
           <img src="/logo-siproper.png" alt="Logo Sapphire Grup" className="h-9 w-auto object-contain" />
           <div className="min-w-0">
             <p className="font-semibold text-base text-foreground leading-tight">
-              Sapphire Grup
+              Task Monitoring App
             </p>
             <p className="text-[11px] text-secondary leading-tight">
-              by Siproper
+              by Siproper Digital System
             </p>
           </div>
         </div>
@@ -170,8 +170,8 @@ export function Sidebar({
         </div>
         <div className="flex items-center justify-between px-5 py-3 gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="size-8 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-              <MessageCircleQuestion className="size-4 text-primary" />
+            <div className="size-8 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <MessageCircleQuestion className="size-4 text-red-600" />
             </div>
             <span className="text-sm font-medium text-secondary truncate">
               Butuh bantuan?
@@ -184,6 +184,11 @@ export function Sidebar({
           >
             <LogOut className="size-4" />
           </button>
+        </div>
+        <div className="px-5 py-2.5 border-t border-border bg-slate-50/50 flex justify-center">
+          <p className="text-[10px] font-medium text-slate-400">
+            Developed by IT Sapphire Grup 2026
+          </p>
         </div>
       </div>
     </aside>

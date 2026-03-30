@@ -276,7 +276,7 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
                 {data.isAdmin ? "Distribusi status task tiap divisi" : "Status distribusi task divisi Anda"}
               </p>
             </div>
-            <Link href="/proker" className="text-sm text-primary font-semibold hover:underline flex items-center gap-1">
+            <Link href="/proker" className="text-sm text-red-600 font-semibold hover:underline flex items-center gap-1">
               Detail <ArrowRight className="size-3.5" />
             </Link>
           </div>
@@ -369,7 +369,7 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
         <div className="lg:col-span-2 flex flex-col rounded-2xl border border-border p-6 bg-white">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-lg text-foreground">Aktivitas Terbaru</h3>
-            <Link href="/weekly" className="text-sm text-primary font-semibold hover:underline flex items-center gap-1">
+            <Link href="/weekly" className="text-sm text-red-600 font-semibold hover:underline flex items-center gap-1">
               Lihat Semua <ArrowRight className="size-3.5" />
             </Link>
           </div>
