@@ -48,8 +48,16 @@ jobs:
             npm run build
 
             echo "==> Restarting app (aaPanel PM2)..."
-            # aaPanel manages Node projects via PM2 internally
-            # Coba restart dengan nama yang mungkin dipakai aaPanel
-            pm2 restart task-sg 2>/dev/null || pm2 restart tasksg 2>/dev/null || pm2 start ecosystem.config.js
+            # Kill proses lain yang mungkin masih pakai port 3003
+            sudo fuser -k 3003/tcp 2>/dev/null || true
+
+            # Reload graceful via PM2
+            if pm2 list | grep -q "task-sg"; then
+              pm2 reload task-sg --update-env
+            elif pm2 list | grep -q "tasksg"; then
+              pm2 reload tasksg --update-env
+            else
+              pm2 start ecosystem.config.js
+            fi
 
             echo "==> Deploy complete!"
