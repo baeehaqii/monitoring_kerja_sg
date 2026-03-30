@@ -28,6 +28,7 @@ jobs:
             cd $PROJECT_DIR
 
             echo "==> Pulling latest code..."
+            git config --global --add safe.directory $PROJECT_DIR
             git pull origin main
 
             echo "==> Installing dependencies..."
