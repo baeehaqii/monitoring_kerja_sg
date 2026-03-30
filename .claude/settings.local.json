@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/unname/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/8aa66a42-60e7-48cb-b2b9-518bb67abb0d/59d7b0a4-8ea6-478d-9625-3266641533fd/skills/xlsx/**)",
+      "Bash(python3 -c \":*)",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(npm --version)"
+    ]
+  }
+}
