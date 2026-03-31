@@ -9,46 +9,80 @@ export default async function RemindersPage() {
 
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
 
-  const [reminders, actionPlans, users] = await Promise.all([
-    prisma.reminder.findMany({
-      where: isAdmin ? {} : { userId: session.user.id },
-      include: {
-        actionPlan: {
-          include: {
-            programKerja: {
-              include: { strategy: { include: { division: true } } },
-            },
-            weeklyProgress: { orderBy: { updatedAt: "desc" }, take: 1 },
+  const now = new Date();
+  const threeDaysLater = new Date(now);
+  threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+
+  // Fetch all action plans approaching or past their SLA deadline
+  const atRiskRaw = await prisma.actionPlan.findMany({
+    where: {
+      programKerja: {
+        targetDate: {
+          not: null,
+          lte: threeDaysLater,
+        },
+      },
+    },
+    include: {
+      programKerja: {
+        include: {
+          strategy: { include: { division: true } },
+        },
+      },
+      weeklyProgress: {
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: { programKerja: { targetDate: "asc" } },
+  });
+
+  // Exclude completed action plans
+  const slaAlerts = atRiskRaw.filter(
+    (ap) => ap.weeklyProgress[0]?.status !== "DONE"
+  );
+
+  // Sent reminder history
+  const sentHistory = await prisma.reminder.findMany({
+    where: {
+      sent: true,
+      ...(isAdmin ? {} : { userId: session.user.id }),
+    },
+    include: {
+      actionPlan: {
+        include: {
+          programKerja: {
+            include: { strategy: { include: { division: true } } },
           },
         },
-        user: { select: { id: true, name: true, email: true } },
       },
-      orderBy: { reminderDate: "desc" },
-      take: 50,
-    }),
-    prisma.actionPlan.findMany({
-      include: {
-        programKerja: {
-          include: { strategy: { include: { division: true } } },
-        },
-      },
-      orderBy: { programKerja: { name: "asc" } },
-    }),
-    isAdmin ? prisma.user.findMany({
-      select: { id: true, name: true, email: true, whatsappNumber: true },
-      orderBy: { name: "asc" },
-    }) : [],
-  ]);
+      user: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { sentAt: "desc" },
+    take: 30,
+  });
+
+  // Users with whatsapp for sending notifications
+  const users = isAdmin
+    ? await prisma.user.findMany({
+        select: { id: true, name: true, email: true, whatsappNumber: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
 
   return (
     <div>
-      <Header title="Pengingat SLA" subtitle="Kelola dan kirim pengingat WhatsApp otomatis" />
+      <Header
+        title="Pengingat SLA"
+        subtitle="Deteksi otomatis action plan yang mendekati atau melewati batas waktu"
+      />
       <RemindersClient
-        reminders={JSON.parse(JSON.stringify(reminders))}
-        actionPlans={JSON.parse(JSON.stringify(actionPlans))}
+        slaAlerts={JSON.parse(JSON.stringify(slaAlerts))}
+        sentHistory={JSON.parse(JSON.stringify(sentHistory))}
         users={JSON.parse(JSON.stringify(users))}
         currentUserId={session.user.id}
         isAdmin={isAdmin}
+        now={now.toISOString()}
       />
     </div>
   );
