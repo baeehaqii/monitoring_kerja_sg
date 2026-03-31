@@ -13,15 +13,25 @@ export default async function RemindersPage() {
   const threeDaysLater = new Date(now);
   threeDaysLater.setDate(threeDaysLater.getDate() + 3);
 
-  // Fetch all action plans approaching or past their SLA deadline
+  // Fetch all action plans that are at-risk:
+  // 1. targetDate within 3 days (or already past), AND not DONE
+  // 2. OR latest weekly progress is DELAY (regardless of deadline)
   const atRiskRaw = await prisma.actionPlan.findMany({
     where: {
-      programKerja: {
-        targetDate: {
-          not: null,
-          lte: threeDaysLater,
+      OR: [
+        // Approaching or past deadline
+        {
+          programKerja: {
+            targetDate: { not: null, lte: threeDaysLater },
+          },
         },
-      },
+        // Manually marked as DELAY in weekly progress
+        {
+          weeklyProgress: {
+            some: { status: "DELAY" },
+          },
+        },
+      ],
     },
     include: {
       programKerja: {
@@ -37,10 +47,13 @@ export default async function RemindersPage() {
     orderBy: { programKerja: { targetDate: "asc" } },
   });
 
-  // Exclude completed action plans
-  const slaAlerts = atRiskRaw.filter(
-    (ap) => ap.weeklyProgress[0]?.status !== "DONE"
-  );
+  // Exclude completed action plans, deduplicate by id
+  const seen = new Set<string>();
+  const slaAlerts = atRiskRaw.filter((ap) => {
+    if (seen.has(ap.id)) return false;
+    seen.add(ap.id);
+    return ap.weeklyProgress[0]?.status !== "DONE";
+  });
 
   // Sent reminder history
   const sentHistory = await prisma.reminder.findMany({

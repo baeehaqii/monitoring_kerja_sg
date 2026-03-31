@@ -158,11 +158,18 @@ export function RemindersClient({
     router.refresh();
   }
 
+  const delayed = slaAlerts.filter(
+    (a) => a.weeklyProgress[0]?.status === "DELAY"
+  );
+  const delayedIds = new Set(delayed.map((a) => a.id));
+
   const overdue = slaAlerts.filter((a) => {
+    if (delayedIds.has(a.id)) return false;
     const d = getDaysUntil(a.programKerja.targetDate, nowDate);
     return d !== null && d <= 0;
   });
   const upcoming = slaAlerts.filter((a) => {
+    if (delayedIds.has(a.id)) return false;
     const d = getDaysUntil(a.programKerja.targetDate, nowDate);
     return d !== null && d > 0;
   });
@@ -176,9 +183,15 @@ export function RemindersClient({
     <div>
       {/* Summary bar */}
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="flex items-center gap-4 text-sm">
-          {overdue.length > 0 && (
+        <div className="flex items-center gap-4 text-sm flex-wrap">
+          {delayed.length > 0 && (
             <span className="flex items-center gap-1.5 text-red-600 font-medium">
+              <AlertTriangle className="w-4 h-4" />
+              {delayed.length} status delay
+            </span>
+          )}
+          {overdue.length > 0 && (
+            <span className="flex items-center gap-1.5 text-red-500 font-medium">
               <CalendarX className="w-4 h-4" />
               {overdue.length} melewati deadline
             </span>
@@ -197,6 +210,26 @@ export function RemindersClient({
           )}
         </div>
       </div>
+
+      {/* Delay — manually marked */}
+      {delayed.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" /> Status Delay
+          </p>
+          <div className="space-y-3">
+            {delayed.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                nowDate={nowDate}
+                alreadySent={sentIds.has(alert.id)}
+                onSend={() => openPreview(alert)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Overdue */}
       {overdue.length > 0 && (
