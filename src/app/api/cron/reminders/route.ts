@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendWhatsAppMessage, buildReminderMessage } from "@/lib/whatsapp";
+import { withHandler } from "@/lib/api-handler";
+import { logger } from "@/lib/logger";
 
 // Called by Vercel Cron or external scheduler (e.g. every 15 minutes)
 // Protected by CRON_SECRET header
-export async function GET(req: NextRequest) {
+export const GET = withHandler(async (req: NextRequest) => {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
@@ -53,8 +55,11 @@ export async function GET(req: NextRequest) {
       sentCount++;
     } else {
       failCount++;
+      logger.warn({ reminderId: r.id, userId: r.userId }, "Cron: failed to send WhatsApp reminder");
     }
   }
+
+  logger.info({ processed: pendingReminders.length, sent: sentCount, failed: failCount }, "Cron reminders processed");
 
   return NextResponse.json({
     processed: pendingReminders.length,
@@ -62,4 +67,4 @@ export async function GET(req: NextRequest) {
     failed: failCount,
     timestamp: now.toISOString(),
   });
-}
+});

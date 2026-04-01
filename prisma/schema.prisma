@@ -166,3 +166,29 @@ model Reminder {
   sentAt       DateTime?
   createdAt    DateTime   @default(now())
 }
+
+model RaciMatrix {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  entries   RaciEntry[]
+  isDefault Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model RaciEntry {
+  id          String     @id @default(cuid())
+  matrix      RaciMatrix @relation(fields: [matrixId], references: [id], onDelete: Cascade)
+  matrixId    String
+  role        String
+  type        RaciType
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+}
+
+enum RaciType {
+  ACCOUNTABLE
+  RESPONSIBLE
+  CONSULTED
+  INFORMED
+}

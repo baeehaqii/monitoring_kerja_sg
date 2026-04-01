@@ -36,6 +36,14 @@ export function CardTitle({ children, className }: { children: React.ReactNode; 
   );
 }
 
+export function CardSubTitle({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <p className={cn("text-xs font-normal text-secondary", className)}>
+      {children}
+    </p>
+  );
+}
+
 export function CardContent({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn(className)}>{children}</div>;
 }

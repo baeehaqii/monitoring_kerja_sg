@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Header } from "@/components/layout/Header";
 import { WeeklyProgressClient } from "@/components/weekly/WeeklyProgressClient";
 import { notFound } from "next/navigation";
+import { divisionStrategyFilter } from "@/lib/permissions";
 
 export default async function WeeklyProgressPage({ params }: { params: Promise<{ weekId: string }> }) {
   const session = await auth();
@@ -29,13 +30,8 @@ export default async function WeeklyProgressPage({ params }: { params: Promise<{
     include: { period: true },
   });
 
-  const divisionFilter =
-    session.user.role === "MEMBER" && session.user.divisionId
-      ? { divisionId: session.user.divisionId }
-      : {};
-
   const strategies = await prisma.strategy.findMany({
-    where: divisionFilter,
+    where: divisionStrategyFilter(session.user),
     include: {
       division: true,
       period: { include: { weeks: { orderBy: { weekNumber: "asc" } } } },

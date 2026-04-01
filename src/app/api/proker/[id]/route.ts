@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withHandler } from "@/lib/api-handler";
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -25,9 +26,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   if (!pk) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json(pk);
-}
+});
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -49,9 +50,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   return NextResponse.json(pk);
-}
+});
 
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
@@ -62,4 +63,4 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   await prisma.programKerja.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

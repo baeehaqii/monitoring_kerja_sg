@@ -1,13 +1,14 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { isSuperAdmin, canManage } from "@/lib/permissions";
 
 async function getDashboardData(
   targetDivId: string | null,
   role: string,
   dateFilter: string | null
 ) {
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const superAdmin = isSuperAdmin(role);
 
   let dateFilterWhere: any = undefined;
   if (dateFilter === "today") {
@@ -25,18 +26,33 @@ async function getDashboardData(
     dateFilterWhere = { gte: d, lte: end };
   }
 
-  const apWhere: any = {};
-  if (!isAdmin || targetDivId) {
-    apWhere.programKerja = { strategy: { divisionId: targetDivId || undefined } };
-  }
+  // Tentukan filter divisi sekali, dipakai di apWhere & wpWhere
+  // - targetDivId selalu ada untuk ADMIN/MEMBER (di-set oleh caller)
+  // - SUPER_ADMIN: targetDivId bisa null (lihat semua) atau spesifik (filter 1 divisi)
+  const hasDivFilter = targetDivId !== null;
+  const divisionIdFilter = hasDivFilter ? targetDivId : undefined;
+
+  // Fallback: jika non-superAdmin tapi divisionId null → blok semua data
+  const blockAll = !superAdmin && !targetDivId;
+
+  const apDivWhere = blockAll
+    ? { programKerja: { strategy: { divisionId: "___no_match___" } } }
+    : hasDivFilter
+      ? { programKerja: { strategy: { divisionId: divisionIdFilter } } }
+      : {};
+
+  const apWhere: any = { ...apDivWhere };
   if (dateFilterWhere) {
     apWhere.createdAt = dateFilterWhere;
   }
 
-  const wpWhere: any = {};
-  if (!isAdmin || targetDivId) {
-    wpWhere.actionPlan = { programKerja: { strategy: { divisionId: targetDivId || undefined } } };
-  }
+  const wpDivWhere = blockAll
+    ? { actionPlan: { programKerja: { strategy: { divisionId: "___no_match___" } } } }
+    : hasDivFilter
+      ? { actionPlan: { programKerja: { strategy: { divisionId: divisionIdFilter } } } }
+      : {};
+
+  const wpWhere: any = { ...wpDivWhere };
   if (dateFilterWhere) {
     wpWhere.updatedAt = dateFilterWhere;
   }
@@ -171,7 +187,7 @@ async function getDashboardData(
     recentProgress,
     delayedTasks,
     divisionStats,
-    isAdmin,
+    isAdmin: canManage(role),
   };
 }
 
@@ -182,9 +198,13 @@ export default async function DashboardPage(
   const session = await auth();
   if (!session?.user) return null;
 
-  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  const superAdmin = isSuperAdmin(session.user.role);
 
-  const filterDivId = isAdmin ? (searchParams.div || null) : session.user.divisionId;
+  // SUPER_ADMIN bisa filter divisi bebas via query param
+  // ADMIN/MEMBER selalu dikunci ke divisi sendiri
+  const filterDivId = superAdmin
+    ? (searchParams.div || null)
+    : (session.user.divisionId ?? null);
   const filterDate = searchParams.date || null;
 
   const [data, divisions] = await Promise.all([

@@ -49,7 +49,7 @@ export function Sidebar({
     return pathname.startsWith(href);
   };
 
-  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
 
   return (
     <aside className="flex flex-col w-[280px] shrink-0 h-screen bg-white border-r border-border overflow-hidden">
@@ -117,7 +117,7 @@ export function Sidebar({
           </div>
         </div>
 
-        {isAdmin && (
+        {isSuperAdmin && (
           <div className="flex flex-col gap-3">
             <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">
               Admin
@@ -173,9 +173,9 @@ export function Sidebar({
             <div className="size-8 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
               <MessageCircleQuestion className="size-4 text-red-600" />
             </div>
-            <span className="text-sm font-medium text-secondary truncate">
+            <a href="https://help.siproper.com/submit" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-secondary truncate">
               Butuh bantuan?
-            </span>
+            </a>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

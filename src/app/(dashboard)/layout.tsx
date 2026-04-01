@@ -25,7 +25,7 @@ export default async function DashboardLayout({
       </div>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden bg-pattern">
         {/* Mobile top bar */}
         <div className="lg:hidden flex items-center gap-3 px-4 h-[60px] bg-white border-b border-border shrink-0">
           <MobileSidebarWrapper {...sidebarProps} />

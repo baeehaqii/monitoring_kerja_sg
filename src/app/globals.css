@@ -6,8 +6,8 @@
   --primary-hover: #0E4BD9;
   --foreground: #080C1A;
   --secondary: #6A7686;
-  --muted: #EFF2F7;
-  --border: #F3F4F3;
+  --muted: #f4f2f2;
+  --border: #e6e7e6;
   --card-grey: #F1F3F6;
   --success: #30B22D;
   --success-light: #DCFCE7;
@@ -49,6 +49,27 @@ body {
   color: var(--foreground);
   font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* SVG pattern — hanya dipakai di area konten (main), bukan sidebar */
+.bg-pattern {
+  position: relative;
+}
+.bg-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/bg-pattern/946379_4614.svg');
+  background-repeat: repeat;
+  background-size: 540px 540px;
+  opacity: 0.03;
+  filter: brightness(0) invert(0.2);
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-pattern > * {
+  position: relative;
+  z-index: 1;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

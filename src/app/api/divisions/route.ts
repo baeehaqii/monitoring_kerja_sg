@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withHandler } from "@/lib/api-handler";
 
-export async function GET() {
+export const GET = withHandler(async () => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const divisions = await prisma.division.findMany({ orderBy: { name: "asc" } });
   return NextResponse.json(divisions);
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -21,4 +22,4 @@ export async function POST(req: NextRequest) {
 
   const division = await prisma.division.create({ data: { name: name.trim() } });
   return NextResponse.json(division, { status: 201 });
-}
+});

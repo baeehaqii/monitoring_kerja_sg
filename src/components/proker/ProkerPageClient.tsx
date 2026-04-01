@@ -46,15 +46,19 @@ type Strategy = {
   programKerja: ProgramKerja[];
 };
 
+type RaciEntry = { id: string; role: string; type: "ACCOUNTABLE" | "RESPONSIBLE" | "CONSULTED" | "INFORMED" };
+type RaciMatrix = { id: string; entries: RaciEntry[] };
+
 interface Props {
   strategies: Strategy[];
   divisions: Division[];
   periods: Period[];
+  raciMatrix: RaciMatrix;
   userRole: string;
   userDivisionId: string | null;
 }
 
-export function ProkerPageClient({ strategies, divisions, periods, userRole, userDivisionId }: Props) {
+export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, userRole, userDivisionId }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
@@ -142,8 +146,8 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
       const { type, id } = deleteTarget;
       const url =
         type === "strategy" ? `/api/strategies/${id}`
-        : type === "proker" ? `/api/proker/${id}`
-        : `/api/action-plans/${id}`;
+          : type === "proker" ? `/api/proker/${id}`
+            : `/api/action-plans/${id}`;
       await fetch(url, { method: "DELETE" });
       setDeleteTarget(null);
       router.refresh();
@@ -404,6 +408,7 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
           open={!!addProkerOpen}
           onClose={() => setAddProkerOpen(null)}
           strategyId={addProkerOpen}
+          raciMatrix={raciMatrix}
           onSuccess={() => { setAddProkerOpen(null); router.refresh(); }}
         />
       )}
@@ -421,6 +426,7 @@ export function ProkerPageClient({ strategies, divisions, periods, userRole, use
           open={!!editProkerOpen}
           onClose={() => setEditProkerOpen(null)}
           programKerja={editProkerOpen}
+          raciMatrix={raciMatrix}
           onSuccess={() => { setEditProkerOpen(null); router.refresh(); }}
         />
       )}

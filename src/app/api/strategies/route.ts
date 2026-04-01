@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withHandler } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
+export const GET = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -34,9 +35,9 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(strategies);
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
@@ -56,4 +57,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(strategy, { status: 201 });
-}
+});

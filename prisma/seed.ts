@@ -199,6 +199,64 @@ async function main() {
     console.log("  ✓ Sample strategy & proker for PCD April 2026");
   }
 
+  // ── RACI Matrix Default ───────────────────────────────────────────────────
+  const raciEntries = [
+    // ACCOUNTABLE
+    { role: "Direktur Utama",            type: "ACCOUNTABLE" as const, order: 1 },
+    { role: "Dir. Penjualan & Pemasaran",type: "ACCOUNTABLE" as const, order: 2 },
+    { role: "Dir. Likuiditas",           type: "ACCOUNTABLE" as const, order: 3 },
+    { role: "Dir. Teknik",               type: "ACCOUNTABLE" as const, order: 4 },
+    { role: "Dir. Legal & Pengembangan", type: "ACCOUNTABLE" as const, order: 5 },
+    { role: "Dir. Keuangan & IT",        type: "ACCOUNTABLE" as const, order: 6 },
+    // RESPONSIBLE
+    { role: "PCD",                         type: "RESPONSIBLE" as const, order: 1 },
+    { role: "Manajer Penjualan & Pemasaran",type: "RESPONSIBLE" as const, order: 2 },
+    { role: "Sales",                       type: "RESPONSIBLE" as const, order: 3 },
+    { role: "Manajer Likuiditas",          type: "RESPONSIBLE" as const, order: 4 },
+    { role: "Staf Likuiditas",             type: "RESPONSIBLE" as const, order: 5 },
+    { role: "Manajer Teknik",              type: "RESPONSIBLE" as const, order: 6 },
+    { role: "QA",                          type: "RESPONSIBLE" as const, order: 7 },
+    { role: "Supervisor Legal",            type: "RESPONSIBLE" as const, order: 8 },
+    { role: "Staf Legal",                  type: "RESPONSIBLE" as const, order: 9 },
+    { role: "Manajer Keuangan",            type: "RESPONSIBLE" as const, order: 10 },
+    { role: "Admin Keuangan",              type: "RESPONSIBLE" as const, order: 11 },
+    { role: "Admin Marketing",             type: "RESPONSIBLE" as const, order: 12 },
+    { role: "Admin Likuiditas",            type: "RESPONSIBLE" as const, order: 13 },
+    { role: "Admin Pembangunan",           type: "RESPONSIBLE" as const, order: 14 },
+    { role: "Admin Pajak",                 type: "RESPONSIBLE" as const, order: 15 },
+    // CONSULTED
+    { role: "Direktur Utama",             type: "CONSULTED" as const, order: 1 },
+    { role: "Dir. Bisnis",                type: "CONSULTED" as const, order: 2 },
+    { role: "Divisi Penjualan & Pemasaran",type: "CONSULTED" as const, order: 3 },
+    { role: "Divisi Likuiditas",          type: "CONSULTED" as const, order: 4 },
+    { role: "Divisi Teknik",              type: "CONSULTED" as const, order: 5 },
+    { role: "Divisi Legal",               type: "CONSULTED" as const, order: 6 },
+    { role: "Divisi Keuangan",            type: "CONSULTED" as const, order: 7 },
+    // INFORMED
+    { role: "Direktur Utama",   type: "INFORMED" as const, order: 1 },
+    { role: "PCD",              type: "INFORMED" as const, order: 2 },
+    { role: "Divisi Likuiditas",type: "INFORMED" as const, order: 3 },
+    { role: "Dir. Bisnis",      type: "INFORMED" as const, order: 4 },
+    { role: "All",              type: "INFORMED" as const, order: 5 },
+  ];
+
+  const existingMatrix = await prisma.raciMatrix.findUnique({
+    where: { name: "Matrix RACI Default" },
+  });
+
+  if (!existingMatrix) {
+    await prisma.raciMatrix.create({
+      data: {
+        name: "Matrix RACI Default",
+        isDefault: true,
+        entries: { create: raciEntries },
+      },
+    });
+    console.log("  ✓ RACI Matrix Default dibuat (6A / 15R / 7C / 5I)");
+  } else {
+    console.log("  ~ RACI Matrix Default sudah ada, skip.");
+  }
+
   console.log("\n✅ Seeding complete!");
   console.log("\nLogin credentials:");
   console.log("  Super Admin : admin@sapphire.id / admin123");

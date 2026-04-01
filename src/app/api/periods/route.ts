@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withHandler } from "@/lib/api-handler";
 
-export async function GET() {
+export const GET = withHandler(async () => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -12,9 +13,9 @@ export async function GET() {
   });
 
   return NextResponse.json(periods);
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(period, { status: 201 });
-}
+});
 
 function generateWeeks(year: number, month: number) {
   const daysInMonth = new Date(year, month, 0).getDate();
