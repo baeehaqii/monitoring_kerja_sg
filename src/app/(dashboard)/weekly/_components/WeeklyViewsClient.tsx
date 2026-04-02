@@ -36,7 +36,7 @@ import { formatDate } from "@/lib/utils";
 type WeekItem = {
   id: string;
   weekNumber: number;
-  startDate: string | Date; // Depending on passing from server
+  startDate: string | Date;
   endDate: string | Date;
   label: string;
   period: {
@@ -54,7 +54,6 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
 
   const today = new Date();
 
-  // Parse dates correctly
   const parsedWeeks = weeks.map(w => ({
     ...w,
     parsedStart: typeof w.startDate === 'string' ? parseISO(w.startDate) : w.startDate,
@@ -75,7 +74,6 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
 
-  // CARD VIEW
   const renderCardView = () => {
     if (Object.keys(groupedByPeriod).length === 0) {
       return (
@@ -153,7 +151,6 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
     );
   };
 
-  // LIST VIEW (A simple table / list variant if image 2 meant list, otherwise Timeline is image 1)
   const renderListView = () => {
     return (
       <div className="space-y-6 mt-4">
@@ -205,11 +202,10 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
     );
   };
 
-  // CALENDAR VIEW (Grid Month)
   const renderCalendarView = () => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
-    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
     
     const dateFormat = "d";
@@ -251,8 +247,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isCurrDay = isToday(day);
             
-            // Find weeks that span over this day
-            const activeWeeks = parsedWeeks.filter(w => 
+            const activeWeeks = parsedWeeks.filter(w =>
               day >= w.parsedStart && day <= w.parsedEnd
             );
 
@@ -288,14 +283,12 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
     );
   };
 
-  // TIMELINE VIEW (Gantt Chart style like image 1)
   const renderTimelineView = () => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-    // Filter weeks that overlap with this month
-    const visibleWeeks = parsedWeeks.filter(w => 
+    const visibleWeeks = parsedWeeks.filter(w =>
       (w.parsedStart <= monthEnd && w.parsedEnd >= monthStart)
     );
 
@@ -311,7 +304,6 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
 
     return (
       <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
-        {/* Toolbar */}
         <div className="p-4 flex items-center justify-between border-b border-slate-100">
           <h2 className="text-lg font-bold text-slate-800">
             {format(currentDate, "MMMM yyyy", { locale: id })}
@@ -331,9 +323,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
           </div>
         </div>
 
-        {/* Board / Timeline Split */}
         <div className="flex flex-1 overflow-hidden min-h-[400px]">
-          {/* Left Column (List) */}
           <div className="w-[30%] min-w-[250px] max-w-[350px] border-r border-slate-200 flex flex-col bg-white z-10">
             <div className="h-[45px] border-b border-slate-200 bg-slate-50 flex items-center px-4 font-semibold text-xs text-slate-600 uppercase tracking-widest shrink-0">
               Work Items
@@ -369,10 +359,8 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
             </div>
           </div>
 
-          {/* Right Column (Timeline Grid) */}
           <div className="flex-1 overflow-x-auto overflow-y-auto flex flex-col relative bg-white">
             <div className="absolute top-0 bottom-0 left-0 right-0 min-w-max flex flex-col pointer-events-none">
-              {/* Header Days */}
               <div className="h-[45px] border-b border-slate-200 bg-slate-50 flex shrink-0 pointer-events-auto">
                 {daysInMonth.map((day, dIdx) => {
                   const isWknd = day.getDay() === 0 || day.getDay() === 6;
@@ -386,41 +374,34 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                 })}
               </div>
               
-              {/* Body Cells / Bars */}
               <div className="flex-1 flex pointer-events-auto">
-                {/* Background Grid columns */}
                 <div className="absolute inset-x-0 inset-y-0 mt-[45px] flex pointer-events-none z-0">
                   {daysInMonth.map((day, dIdx) => (
                     <div key={dIdx} className={`w-10 shrink-0 border-r border-slate-100 ${day.getDay() === 0 || day.getDay() === 6 ? 'bg-slate-50/50' : ''}`} />
                   ))}
                 </div>
 
-                {/* Rows data */}
                 <div className="flex-1 flex flex-col z-10 min-w-max">
                   {Object.entries(groupedVisible).map(([periodName, periodWeeks]) => (
                     <div key={periodName} className="flex flex-col">
-                      {/* Period Header Spacing */}
-                      <div className="h-8 border-b border-slate-100/0"></div> 
+                      <div className="h-8 border-b border-slate-100/0"></div>
                       
                       {periodWeeks.map(week => {
                         const startObj = week.parsedStart;
                         const endObj = week.parsedEnd;
                         
-                        // Calculate left offset & width based on 40px per day
-                        // Clamp to month start/end
                         const visibleStart = startObj < monthStart ? monthStart : startObj;
                         const visibleEnd = endObj > monthEnd ? monthEnd : endObj;
-                        
-                        // Diff in days from monthStart
+
                         const diffSecStart = visibleStart.getTime() - monthStart.getTime();
                         const startDayOffset = Math.floor(diffSecStart / (1000 * 60 * 60 * 24));
-                        
+
                         const diffSecEnd = visibleEnd.getTime() - visibleStart.getTime();
-                        let durationDays = Math.ceil(diffSecEnd / (1000 * 60 * 60 * 24)) + 1; // inclusive
-                        
+                        let durationDays = Math.ceil(diffSecEnd / (1000 * 60 * 60 * 24)) + 1;
+
                         if (durationDays < 1) durationDays = 1;
 
-                        const leftPos = startDayOffset * 40; // 40px/day (w-10 = 2.5rem = 40px)
+                        const leftPos = startDayOffset * 40;
                         const width = durationDays * 40;
 
                         const isExtendingLeft = startObj < monthStart;
@@ -429,8 +410,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                         return (
                           <div key={week.id} className="h-12 border-b border-slate-100 flex items-center px-0 relative hover:bg-slate-50/50 transition-colors group">
                             <div className="h-full w-full absolute inset-0 group-hover:bg-slate-50/50 -z-10 hidden" />
-                            {/* Gantt Bar */}
-                            <Link 
+                            <Link
                               href={`/weekly/${week.id}`}
                               className="absolute top-2 h-7 rounded bg-[#0f52ba]/10 border border-[#0f52ba]/30 shadow-sm flex items-center px-2 text-[10px] font-semibold text-[#0f52ba] hover:bg-[#0f52ba]/20 hover:border-[#0f52ba] transition-all overflow-hidden whitespace-nowrap"
                               style={{ 

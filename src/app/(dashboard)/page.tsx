@@ -26,13 +26,9 @@ async function getDashboardData(
     dateFilterWhere = { gte: d, lte: end };
   }
 
-  // Tentukan filter divisi sekali, dipakai di apWhere & wpWhere
-  // - targetDivId selalu ada untuk ADMIN/MEMBER (di-set oleh caller)
-  // - SUPER_ADMIN: targetDivId bisa null (lihat semua) atau spesifik (filter 1 divisi)
   const hasDivFilter = targetDivId !== null;
   const divisionIdFilter = hasDivFilter ? targetDivId : undefined;
 
-  // Fallback: jika non-superAdmin tapi divisionId null → blok semua data
   const blockAll = !superAdmin && !targetDivId;
 
   const apDivWhere = blockAll
@@ -200,8 +196,6 @@ export default async function DashboardPage(
 
   const superAdmin = isSuperAdmin(session.user.role);
 
-  // SUPER_ADMIN bisa filter divisi bebas via query param
-  // ADMIN/MEMBER selalu dikunci ke divisi sendiri
   const filterDivId = superAdmin
     ? (searchParams.div || null)
     : (session.user.divisionId ?? null);

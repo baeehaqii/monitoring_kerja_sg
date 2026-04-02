@@ -59,7 +59,6 @@ interface Props {
 export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, userRole }: Props) {
   const router = useRouter();
 
-  // Initialize progress state from existing data
   const [progressMap, setProgressMap] = useState<Record<string, ProgressEntry>>(() => {
     const map: Record<string, ProgressEntry> = {};
     for (const s of strategies) {
@@ -133,7 +132,6 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
 
   return (
     <div>
-      {/* Navigation Bar */}
       <div className="flex items-center justify-between mb-5 bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
         <div className="flex items-center gap-2">
           {prevWeek ? (
@@ -165,7 +163,6 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
         </div>
       </div>
 
-      {/* Progress Summary */}
       <div className="flex items-center gap-4 mb-4">
         <div className="flex-1 bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3">
           <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -189,7 +186,6 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
         </Button>
       </div>
 
-      {/* Strategy + PK + AP List */}
       {strategies.length === 0 ? (
         <Card>
           <p className="text-center text-slate-400 py-10 text-sm">Belum ada data program kerja.</p>
@@ -200,7 +196,6 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
             const isExpanded = expandedStrategies.has(strategy.id);
             return (
               <Card key={strategy.id} padding={false} className="border-l-[5px] border-l-red-600 shadow-md hover:shadow-lg transition-shadow bg-white overflow-hidden">
-                {/* Strategy Header */}
                 <div
                   className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50 transition-colors"
                   onClick={() => toggleStrategy(strategy.id)}
@@ -217,15 +212,12 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
 
                 {isExpanded && (
                   <div className="border-t border-slate-200 bg-slate-50 relative">
-                    {/* Visual left line connector */}
                     <div className="absolute left-[36px] top-0 bottom-0 w-px bg-slate-200 z-0"></div>
 
                     {strategy.programKerja.map((pk) => (
                       <div key={pk.id} className="border-b border-slate-200 last:border-0 relative z-10 transition-colors hover:bg-slate-100/50">
-                        {/* PK Header */}
                         <div className="flex items-center gap-3 pr-5 pl-12 py-3.5 cursor-pointer transition-colors relative">
                           <div className="relative">
-                            {/* Connector arm from Strategy line */}
                             <div className="absolute right-full top-1/2 w-[12px] h-px bg-slate-300 -translate-y-1/2"></div>
                             <div className="w-7 h-7 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center flex-shrink-0 z-10 relative">
                               <span className="text-xs font-bold text-slate-700">{pk.number}</span>
@@ -234,9 +226,7 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
                           <span className="text-sm font-medium text-slate-800">{pk.name}</span>
                         </div>
 
-                        {/* Action Plans */}
                         <div className="relative pr-5 pb-5 pl-[88px] bg-slate-100/80 border-t border-slate-200/60 pt-4 shadow-inner">
-                          {/* Vertical line dropping from PK badge */}
                           <div className="absolute left-[62px] top-0 bottom-8 w-px bg-slate-300 z-0"></div>
 
                           {pk.actionPlans.map((ap) => {
@@ -251,7 +241,6 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
                                   !isPlanned && "opacity-60"
                                 )}
                               >
-                                {/* Connector arm from PK line */}
                                 <div className="absolute right-full top-[32px] w-[26px] h-px bg-slate-300 -translate-y-1/2"></div>
 
                                 <div className="flex items-center gap-3 mb-4">
@@ -303,7 +292,6 @@ export function WeeklyProgressClient({ week, nextWeek, prevWeek, strategies, use
         </div>
       )}
 
-      {/* Fixed Save Button */}
       <div className="fixed bottom-6 right-6">
         <Button
           onClick={handleSave}

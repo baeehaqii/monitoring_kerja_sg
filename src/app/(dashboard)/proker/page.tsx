@@ -37,7 +37,6 @@ async function getProkerData(divisionId: string | null, role: string) {
       },
       orderBy: [{ period: { startDate: "asc" } }, { number: "asc" }],
     }),
-    // Ambil matrix RACI default (isDefault=true), fallback ke yang pertama
     prisma.raciMatrix.findFirst({
       where: { isDefault: true },
       include: { entries: { orderBy: [{ type: "asc" }, { order: "asc" }] } },

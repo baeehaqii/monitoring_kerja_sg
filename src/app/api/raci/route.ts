@@ -32,7 +32,6 @@ export const POST = withHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: "Type tidak valid" }, { status: 400 });
   }
 
-  // hitung order berikutnya
   const lastEntry = await prisma.raciEntry.findFirst({
     where: { matrixId, type },
     orderBy: { order: "desc" },

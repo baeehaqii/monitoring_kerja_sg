@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withHandler } from "@/lib/api-handler";
 
-// DELETE /api/raci/[entryId]
 export const DELETE = withHandler(async (
   _req: Request,
   { params }: { params: Promise<{ entryId: string }> }

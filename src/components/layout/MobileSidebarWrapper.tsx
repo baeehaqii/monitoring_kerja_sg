@@ -18,7 +18,6 @@ export function MobileSidebarWrapper({
 
   return (
     <>
-      {/* Mobile menu button */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Buka menu"
@@ -27,7 +26,6 @@ export function MobileSidebarWrapper({
         <Menu className="size-5 text-foreground" />
       </button>
 
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-black/60 z-40 lg:hidden"
@@ -35,7 +33,6 @@ export function MobileSidebarWrapper({
         />
       )}
 
-      {/* Mobile sidebar drawer */}
       <div
         className={`fixed inset-y-0 left-0 z-50 lg:hidden transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"

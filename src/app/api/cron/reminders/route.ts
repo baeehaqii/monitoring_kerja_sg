@@ -4,8 +4,6 @@ import { sendWhatsAppMessage, buildReminderMessage } from "@/lib/whatsapp";
 import { withHandler } from "@/lib/api-handler";
 import { logger } from "@/lib/logger";
 
-// Called by Vercel Cron or external scheduler (e.g. every 15 minutes)
-// Protected by CRON_SECRET header
 export const GET = withHandler(async (req: NextRequest) => {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;

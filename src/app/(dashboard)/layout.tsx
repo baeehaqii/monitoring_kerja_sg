@@ -19,14 +19,11 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-muted">
-      {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <Sidebar {...sidebarProps} />
       </div>
 
-      {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden bg-pattern">
-        {/* Mobile top bar */}
         <div className="lg:hidden flex items-center gap-3 px-4 h-[60px] bg-white border-b border-border shrink-0">
           <MobileSidebarWrapper {...sidebarProps} />
           <div className="flex items-center gap-2.5 min-w-0">

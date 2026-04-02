@@ -17,7 +17,6 @@ export const GET = withHandler(async (req: NextRequest, { params }: { params: Pr
   });
   if (!week) return NextResponse.json({ error: "Week not found" }, { status: 404 });
 
-  // Find next week for "next step" context
   const nextWeek = await prisma.week.findFirst({
     where: {
       period: { year: { gte: week.period.year } },
@@ -61,7 +60,6 @@ export const POST = withHandler(async (req: NextRequest, { params }: { params: P
   const { weekId } = await params;
   const body = await req.json();
 
-  // body = [{ actionPlanId, currentProgress, nextStep, status }]
   const updates: Array<{
     actionPlanId: string;
     currentProgress?: string;

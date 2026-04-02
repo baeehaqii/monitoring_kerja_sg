@@ -2,15 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { logger } from "./logger";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RouteHandler<C = any> = (req: NextRequest, context: C) => Promise<NextResponse>;
 
-/**
- * Wraps an API route handler with centralized error handling and logging.
- * - Catches unhandled Prisma errors and maps them to proper HTTP responses
- * - Logs all errors with request context
- * - Returns consistent JSON error shape: { error: string }
- */
 export function withHandler<C = unknown>(handler: RouteHandler<C>): RouteHandler<C> {
   return async (req: NextRequest, context: C): Promise<NextResponse> => {
     try {

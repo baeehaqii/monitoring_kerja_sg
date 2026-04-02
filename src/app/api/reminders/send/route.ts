@@ -31,7 +31,6 @@ export const POST = withHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: "Failed to send WhatsApp message" }, { status: 502 });
   }
 
-  // Record as sent reminder
   const reminder = await prisma.reminder.create({
     data: {
       actionPlanId,

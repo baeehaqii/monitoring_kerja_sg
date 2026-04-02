@@ -53,7 +53,6 @@ export function Sidebar({
 
   return (
     <aside className="flex flex-col w-[280px] shrink-0 h-screen bg-white border-r border-border overflow-hidden">
-      {/* Logo */}
       <div className="flex items-center justify-between border-b border-border h-[72px] px-5 gap-3">
         <div className="flex items-center gap-3">
           <img src="/logo-siproper.png" alt="Logo Sapphire Grup" className="h-9 w-auto object-contain" />
@@ -77,7 +76,6 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Navigation */}
       <div className="flex flex-col p-4 pb-28 gap-5 overflow-y-auto flex-1">
         <div className="flex flex-col gap-3">
           <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">
@@ -158,7 +156,6 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Bottom: User info + Help/Logout */}
       <div className="absolute bottom-0 left-0 w-[280px] border-t border-border bg-white">
         <div className="px-5 py-3 border-b border-border">
           <p className="text-sm font-semibold text-foreground truncate">

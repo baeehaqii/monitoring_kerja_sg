@@ -4,7 +4,6 @@ import fs from "fs";
 
 const isDev = process.env.NODE_ENV !== "production";
 
-// Ensure logs/ directory exists
 const logsDir = path.join(process.cwd(), "logs");
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
@@ -30,7 +29,7 @@ const transport = pino.transport(
         targets: [
           {
             target: "pino/file",
-            options: { destination: 1 }, // stdout
+            options: { destination: 1 },
             level: "info",
           },
           {

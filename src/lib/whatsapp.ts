@@ -1,5 +1,5 @@
 interface SendWAMessage {
-  target: string; // phone number
+  target: string;
   message: string;
 }
 
@@ -10,7 +10,6 @@ export async function sendWhatsAppMessage({ target, message }: SendWAMessage): P
     return false;
   }
 
-  // Normalize number: remove leading 0, add 62
   const normalized = target.startsWith("0") ? "62" + target.slice(1) : target;
 
   try {

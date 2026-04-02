@@ -9,7 +9,6 @@ export const PUT = withHandler(async (req: NextRequest, { params }: { params: Pr
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  // Allow user to update own profile, admins can update anyone
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
   if (session.user.id !== id && !isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

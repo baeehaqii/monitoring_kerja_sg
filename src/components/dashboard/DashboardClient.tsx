@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// Custom hook for counting animation
 function useCountUp(end: number, duration: number = 800) {
   const [count, setCount] = useState(0);
 
@@ -29,7 +28,6 @@ function useCountUp(end: number, duration: number = 800) {
     const step = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / duration, 1);
-      // use ease-out quad
       const easeOut = 1 - (1 - progress) * (1 - progress);
       setCount(Math.floor(easeOut * end));
 
@@ -102,7 +100,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
   const currentDiv = searchParams.get("div") || "";
   const currentDate = searchParams.get("date") || "";
 
-  // Update animation key when data changes to trigger re-animation
   useEffect(() => {
     setAnimKey((prev) => prev + 1);
   }, [data.totalActionPlans, data.total]);
@@ -124,7 +121,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
   const onProgressP = (data.onProgress / safeTotal) * 100;
   const delayP = (data.delay / safeTotal) * 100;
 
-  // Animated counters
   const actTotalPlans = useCountUp(data.totalActionPlans);
   const actDone = useCountUp(data.done);
   const actOnProgress = useCountUp(data.onProgress);
@@ -171,9 +167,7 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
       />
 
       <div key={animKey} className="flex flex-col gap-6">
-        {/* ── Stat Cards ─────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Total Task */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col rounded-2xl border border-border p-5 gap-3 bg-white hover:ring-1 hover:ring-primary transition-all cursor-default">
           <div className="flex items-center gap-2">
             <div className="size-11 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
@@ -191,7 +185,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           </div>
         </div>
 
-        {/* Selesai */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75 flex flex-col rounded-2xl border border-border p-5 gap-3 bg-white hover:ring-1 hover:ring-success transition-all cursor-default">
           <div className="flex items-center gap-2">
             <div className="size-11 bg-success/10 rounded-xl flex items-center justify-center shrink-0">
@@ -209,7 +202,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           </div>
         </div>
 
-        {/* On Progress */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 flex flex-col rounded-2xl border border-border p-5 gap-3 bg-white hover:ring-1 hover:ring-primary transition-all cursor-default">
           <div className="flex items-center gap-2">
             <div className="size-11 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
@@ -227,7 +219,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           </div>
         </div>
 
-        {/* Belum Mulai */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 flex flex-col rounded-2xl border border-border p-5 gap-3 bg-white hover:ring-1 hover:ring-secondary transition-all cursor-default">
           <div className="flex items-center gap-2">
             <div className="size-11 bg-muted rounded-xl flex items-center justify-center shrink-0">
@@ -245,7 +236,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           </div>
         </div>
 
-        {/* Delay / Melebihi SLA */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 flex flex-col rounded-2xl border border-border p-5 gap-3 bg-white hover:ring-1 hover:ring-error transition-all cursor-default">
           <div className="flex items-center gap-2">
             <div className="size-11 bg-error/10 rounded-xl flex items-center justify-center shrink-0">
@@ -264,7 +254,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
         </div>
       </div>
 
-      {/* ── Middle Row: Division Progress + Completion Ring ─────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
         <div className="lg:col-span-2 flex flex-col rounded-2xl border border-border p-6 gap-5 bg-white">
           <div className="flex items-center justify-between">
@@ -319,7 +308,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           </div>
         </div>
 
-        {/* Completion Ring */}
         <div className="flex flex-col rounded-2xl border border-border p-6 gap-4 bg-white">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-lg text-foreground">Tingkat Selesai</h3>
@@ -363,9 +351,7 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
         </div>
       </div>
 
-      {/* ── Bottom Row: Recent Activities + Delayed Tasks ───────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
-        {/* Recent Activities */}
         <div className="lg:col-span-2 flex flex-col rounded-2xl border border-border p-6 bg-white">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-lg text-foreground">Aktivitas Terbaru</h3>
@@ -408,7 +394,6 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           </div>
         </div>
 
-        {/* Task Delay */}
         <div className="flex flex-col rounded-2xl border border-error/25 p-6 gap-5 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">

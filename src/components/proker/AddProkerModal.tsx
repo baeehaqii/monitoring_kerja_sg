@@ -18,14 +18,12 @@ interface Props {
   raciMatrix: RaciMatrix;
 }
 
-/** Filter entries berdasarkan type dan ubah ke options Select */
 function raciOptions(entries: RaciEntry[], type: RaciType) {
   return entries
     .filter((e) => e.type === type)
     .map((e) => ({ value: e.role, label: e.role }));
 }
 
-/** Quick-add role baru ke RACI Matrix via API, langsung refresh list */
 async function quickAddRaci(
   matrixId: string,
   type: RaciType,
@@ -53,7 +51,6 @@ export function AddProkerModal({ open, onClose, strategyId, onSuccess, raciMatri
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // State untuk quick-add inline per kolom RACI
   const [quickAdd, setQuickAdd] = useState<{ type: RaciType; value: string } | null>(null);
   const [quickSaving, setQuickSaving] = useState(false);
   const [localEntries, setLocalEntries] = useState<RaciEntry[]>(raciMatrix.entries);
@@ -85,14 +82,12 @@ export function AddProkerModal({ open, onClose, strategyId, onSuccess, raciMatri
     setQuickSaving(true);
     const ok = await quickAddRaci(raciMatrix.id, type, quickAdd.value.trim());
     if (ok) {
-      // Tambah ke localEntries agar langsung muncul di dropdown
       const newEntry: RaciEntry = {
         id: `temp-${Date.now()}`,
         role: quickAdd.value.trim(),
         type,
       };
       setLocalEntries((prev) => [...prev, newEntry]);
-      // Auto-select nilai baru
       const fieldMap: Record<RaciType, string> = {
         ACCOUNTABLE: "raciAccountable",
         RESPONSIBLE: "raciResponsible",
@@ -149,7 +144,6 @@ export function AddProkerModal({ open, onClose, strategyId, onSuccess, raciMatri
                   </button>
                 </div>
 
-                {/* Quick-add input inline */}
                 {quickAdd?.type === type && (
                   <div className="flex gap-1 mb-1.5">
                     <input

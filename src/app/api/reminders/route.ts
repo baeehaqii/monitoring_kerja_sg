@@ -46,7 +46,6 @@ export const POST = withHandler(async (req: NextRequest) => {
   return NextResponse.json(reminder, { status: 201 });
 });
 
-// Trigger: send pending reminders (called by cron)
 export const PUT = withHandler(async () => {
   const session = await auth();
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {

@@ -32,7 +32,6 @@ export const POST = withHandler(async (req: NextRequest) => {
   const endDate = new Date(year, month, 0);
   const name = `${monthNames[month - 1]} ${year}`;
 
-  // Generate weeks for the month
   const weeks = generateWeeks(year, month);
 
   const period = await prisma.period.create({
@@ -57,18 +56,15 @@ function generateWeeks(year: number, month: number) {
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const monthName = monthNames[month - 1];
 
-  // Divide month into weeks (Mon-Sun boundaries, max 5 weeks)
   const weeks = [];
   let weekStart = 1;
   let weekNum = 1;
 
   while (weekStart <= daysInMonth) {
-    // Find the next Sunday or end of month
     const startDt = new Date(year, month - 1, weekStart);
     let weekEnd = weekStart;
 
-    // End at Sunday (day 0) or end of month
-    const dayOfWeek = startDt.getDay(); // 0=Sun, 1=Mon,...
+    const dayOfWeek = startDt.getDay();
     const daysUntilSunday = dayOfWeek === 0 ? 6 : 7 - dayOfWeek;
     weekEnd = Math.min(weekStart + daysUntilSunday, daysInMonth);
 
@@ -87,7 +83,6 @@ function generateWeeks(year: number, month: number) {
     weekNum++;
     if (weekNum > 5) break;
 
-    // Last week catches remainder
     if (weekStart <= daysInMonth && weekNum === 5) {
       const finalLabel = `${String(weekStart).padStart(2, "0")} - ${String(daysInMonth).padStart(2, "0")} ${monthName} ${year}`;
       weeks.push({

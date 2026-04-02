@@ -1,11 +1,9 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
 import "dotenv/config";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const prisma = new PrismaClient({ adapter } as any);
 
 const DIVISIONS = [
@@ -60,7 +58,6 @@ function generateWeeks(year: number, month: number) {
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // Divisions
   const divisionMap: Record<string, string> = {};
   for (const name of DIVISIONS) {
     const d = await prisma.division.upsert({
@@ -72,7 +69,6 @@ async function main() {
     console.log(`  ✓ Division: ${name}`);
   }
 
-  // Periods: April, May, June 2026
   const periodMonths = [
     { year: 2026, month: 4 },
     { year: 2026, month: 5 },
@@ -103,7 +99,6 @@ async function main() {
     }
   }
 
-  // Super Admin
   const adminPassword = await hash("admin123", 12);
   await prisma.user.upsert({
     where: { email: "admin@sapphire.id" },
@@ -117,7 +112,6 @@ async function main() {
   });
   console.log("  ✓ Super Admin: admin@sapphire.id / admin123");
 
-  // Demo users per division
   const demoUsers = [
     { name: "Manager PCD", email: "pcd@sapphire.id", division: "PCD", role: "ADMIN" },
     { name: "Staff Penjualan", email: "sales@sapphire.id", division: "Penjualan & Pemasaran", role: "MEMBER" },
@@ -140,7 +134,6 @@ async function main() {
     console.log(`  ✓ User: ${u.email} / password123`);
   }
 
-  // Sample Strategy for PCD - April 2026
   const aprilPeriodId = periodMap["April 2026"];
   const pcdId = divisionMap["PCD"];
 
@@ -186,7 +179,6 @@ async function main() {
         update: {},
       });
 
-      // Assign to weeks 1-2 for AP1, weeks 2-3 for AP2, etc.
       const targetWeeks = weeks.slice(i - 1, i + 1);
       for (const w of targetWeeks) {
         await prisma.taskTimeline.upsert({
@@ -199,16 +191,13 @@ async function main() {
     console.log("  ✓ Sample strategy & proker for PCD April 2026");
   }
 
-  // ── RACI Matrix Default ───────────────────────────────────────────────────
   const raciEntries = [
-    // ACCOUNTABLE
     { role: "Direktur Utama",            type: "ACCOUNTABLE" as const, order: 1 },
     { role: "Dir. Penjualan & Pemasaran",type: "ACCOUNTABLE" as const, order: 2 },
     { role: "Dir. Likuiditas",           type: "ACCOUNTABLE" as const, order: 3 },
     { role: "Dir. Teknik",               type: "ACCOUNTABLE" as const, order: 4 },
     { role: "Dir. Legal & Pengembangan", type: "ACCOUNTABLE" as const, order: 5 },
     { role: "Dir. Keuangan & IT",        type: "ACCOUNTABLE" as const, order: 6 },
-    // RESPONSIBLE
     { role: "PCD",                         type: "RESPONSIBLE" as const, order: 1 },
     { role: "Manajer Penjualan & Pemasaran",type: "RESPONSIBLE" as const, order: 2 },
     { role: "Sales",                       type: "RESPONSIBLE" as const, order: 3 },
@@ -224,7 +213,6 @@ async function main() {
     { role: "Admin Likuiditas",            type: "RESPONSIBLE" as const, order: 13 },
     { role: "Admin Pembangunan",           type: "RESPONSIBLE" as const, order: 14 },
     { role: "Admin Pajak",                 type: "RESPONSIBLE" as const, order: 15 },
-    // CONSULTED
     { role: "Direktur Utama",             type: "CONSULTED" as const, order: 1 },
     { role: "Dir. Bisnis",                type: "CONSULTED" as const, order: 2 },
     { role: "Divisi Penjualan & Pemasaran",type: "CONSULTED" as const, order: 3 },
@@ -232,7 +220,6 @@ async function main() {
     { role: "Divisi Teknik",              type: "CONSULTED" as const, order: 5 },
     { role: "Divisi Legal",               type: "CONSULTED" as const, order: 6 },
     { role: "Divisi Keuangan",            type: "CONSULTED" as const, order: 7 },
-    // INFORMED
     { role: "Direktur Utama",   type: "INFORMED" as const, order: 1 },
     { role: "PCD",              type: "INFORMED" as const, order: 2 },
     { role: "Divisi Likuiditas",type: "INFORMED" as const, order: 3 },

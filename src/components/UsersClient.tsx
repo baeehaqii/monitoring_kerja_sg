@@ -204,7 +204,6 @@ export function UsersClient({ users, divisions, isSuperAdmin }: Props) {
         </div>
       </Card>
 
-      {/* Add Modal */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Tambah Pengguna" size="lg">
         <form onSubmit={handleAdd} className="space-y-4">
           <FormContent />
@@ -215,7 +214,6 @@ export function UsersClient({ users, divisions, isSuperAdmin }: Props) {
         </form>
       </Modal>
 
-      {/* Edit Modal */}
       <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Edit Pengguna" size="lg">
         <form onSubmit={handleEdit} className="space-y-4">
           <FormContent />

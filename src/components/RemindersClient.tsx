@@ -181,7 +181,6 @@ export function RemindersClient({
 
   return (
     <div>
-      {/* Summary bar */}
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div className="flex items-center gap-4 text-sm flex-wrap">
           {delayed.length > 0 && (
@@ -211,7 +210,6 @@ export function RemindersClient({
         </div>
       </div>
 
-      {/* Delay — manually marked */}
       {delayed.length > 0 && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -231,7 +229,6 @@ export function RemindersClient({
         </div>
       )}
 
-      {/* Overdue */}
       {overdue.length > 0 && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -251,7 +248,6 @@ export function RemindersClient({
         </div>
       )}
 
-      {/* Upcoming (within 3 days) */}
       {upcoming.length > 0 && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -281,7 +277,6 @@ export function RemindersClient({
         </Card>
       )}
 
-      {/* Sent history */}
       {sentHistory.length > 0 && (
         <div className="mt-2">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -311,7 +306,6 @@ export function RemindersClient({
         </div>
       )}
 
-      {/* WA Preview Modal */}
       <Modal
         open={!!previewAlert}
         onClose={closePreview}
@@ -320,7 +314,6 @@ export function RemindersClient({
       >
         {previewAlert && (
           <div className="space-y-4">
-            {/* Recipient picker */}
             {isAdmin && users.length > 0 && (
               <div>
                 <label className="text-sm font-medium text-slate-700 block mb-1">
@@ -345,7 +338,6 @@ export function RemindersClient({
               </div>
             )}
 
-            {/* Message preview */}
             <div>
               <label className="text-sm font-medium text-slate-700 block mb-1">
                 Preview Pesan
@@ -355,7 +347,6 @@ export function RemindersClient({
               </div>
             </div>
 
-            {/* Custom message override */}
             <div>
               <label className="text-sm font-medium text-slate-700 block mb-1 flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5" />

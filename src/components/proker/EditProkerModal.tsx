@@ -13,7 +13,7 @@ type RaciMatrix = { id: string; entries: RaciEntry[] };
 interface Props {
   open: boolean;
   onClose: () => void;
-  programKerja: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  programKerja: any;
   onSuccess: () => void;
   raciMatrix: RaciMatrix;
 }

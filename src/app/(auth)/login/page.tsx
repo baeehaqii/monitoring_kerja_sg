@@ -39,7 +39,6 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-white via-red-50 to-white p-4">
-      {/* Animated Texture Background */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes drift {
           from { background-position: 0 0; }
@@ -54,12 +53,10 @@ export default function LoginPage() {
         }}
       />
       
-      {/* Decorative Blur Spheres */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-red-100/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-100/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse pointer-events-none" style={{ animationDelay: '2s' }} />
 
       <div className="relative z-10 w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
             <img src={logoImage.src} alt="Logo Sapphire Grup" className="h-20 w-auto object-contain drop-shadow-sm transition-transform duration-300 pointer-events-none" />
@@ -68,7 +65,6 @@ export default function LoginPage() {
           <p className="text-sm text-slate-500 mt-1 font-medium">Monitoring Program Kerja · by Siproper</p>
         </div>
 
-        {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-1">Masuk ke Akun</h2>
           <p className="text-sm text-slate-500 mb-5">Masukkan kredensial Anda untuk melanjutkan</p>

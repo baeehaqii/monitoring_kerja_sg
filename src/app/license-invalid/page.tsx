@@ -55,7 +55,6 @@ export default async function LicenseInvalidPage({
             boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
             textAlign: "center",
           }}>
-            {/* Icon */}
             <div style={{
               width: "64px",
               height: "64px",
@@ -72,22 +71,18 @@ export default async function LicenseInvalidPage({
               </svg>
             </div>
 
-            {/* App Name */}
             <p style={{ fontSize: "12px", fontWeight: 600, color: "#DC2626", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "8px" }}>
               License Error
             </p>
 
-            {/* Title */}
             <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#0F172A", marginBottom: "12px", lineHeight: 1.3 }}>
               {info.title}
             </h1>
 
-            {/* Description */}
             <p style={{ fontSize: "14px", color: "#64748B", lineHeight: 1.6, marginBottom: "32px" }}>
               {info.desc}
             </p>
 
-            {/* Error code */}
             <div style={{
               background: "#F8FAFC",
               borderRadius: "8px",
@@ -99,7 +94,6 @@ export default async function LicenseInvalidPage({
               Error code: {reason}
             </div>
 
-            {/* Contact */}
             <p style={{ marginTop: "24px", fontSize: "13px", color: "#94A3B8" }}>
               Hubungi pengembang di{" "}
               <a href="mailto:support@siproper.com" style={{ color: "#0F52BA", textDecoration: "none" }}>

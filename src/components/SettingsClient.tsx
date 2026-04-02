@@ -54,7 +54,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
   const [raciForm, setRaciForm] = useState({ matrixId: "", role: "", type: "RESPONSIBLE" as RaciType });
   const [saving, setSaving] = useState(false);
 
-  // gunakan matrix pertama (default) jika ada
   const defaultMatrix = raciMatrices.find((m) => m.isDefault) ?? raciMatrices[0];
 
   async function addPeriod(e: React.FormEvent) {
@@ -113,7 +112,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
     setAddRaciOpen(true);
   }
 
-  // group entries by type for display
   function groupEntries(entries: RaciEntry[]) {
     const grouped: Partial<Record<RaciType, RaciEntry[]>> = {};
     for (const e of entries) {
@@ -125,9 +123,7 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Row 1: Periode + Divisi */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-        {/* Periods */}
         <Card className="flex flex-col">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -164,7 +160,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
           </div>
         </Card>
 
-        {/* Divisions */}
         <Card className="flex flex-col">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -198,7 +193,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
         </Card>
       </div>
 
-      {/* Row 2: Matrix RACI (full width) */}
       {defaultMatrix && (
         <Card className="flex flex-col">
           <CardHeader>
@@ -216,7 +210,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
             </Button>
           </CardHeader>
 
-          {/* 4-column RACI table */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 overflow-y-auto max-h-[420px] pr-1">
             {(["ACCOUNTABLE", "RESPONSIBLE", "CONSULTED", "INFORMED"] as RaciType[]).map((type) => {
               const cfg = RACI_LABELS[type];
@@ -253,7 +246,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
         </Card>
       )}
 
-      {/* Add Period Modal */}
       <Modal open={addPeriodOpen} onClose={() => setAddPeriodOpen(false)} title="Tambah Periode">
         <form onSubmit={addPeriod} className="space-y-4">
           <Input
@@ -287,7 +279,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
         </form>
       </Modal>
 
-      {/* Add Division Modal */}
       <Modal open={addDivisionOpen} onClose={() => setAddDivisionOpen(false)} title="Tambah Divisi">
         <form onSubmit={addDivision} className="space-y-4">
           <Input
@@ -304,7 +295,6 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
         </form>
       </Modal>
 
-      {/* Add RACI Entry Modal */}
       <Modal open={addRaciOpen} onClose={() => setAddRaciOpen(false)} title="Tambah Role RACI">
         <form onSubmit={addRaciEntry} className="space-y-4">
           {raciMatrices.length > 1 && (

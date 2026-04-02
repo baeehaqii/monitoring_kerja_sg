@@ -158,7 +158,6 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
 
   return (
     <div>
-      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -195,7 +194,6 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
         </div>
       </div>
 
-      {/* Strategies */}
       {filtered.length === 0 ? (
         <Card>
           <p className="text-center text-slate-400 py-10 text-sm">
@@ -208,7 +206,6 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
             const isExpanded = expandedStrategies.has(strategy.id);
             return (
               <Card key={strategy.id} padding={false} className="border-l-[5px] border-l-red-600 shadow-md hover:shadow-lg transition-shadow bg-white overflow-hidden">
-                {/* Strategy Header */}
                 <div
                   className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50 transition-colors"
                   onClick={() => toggleStrategy(strategy.id)}
@@ -245,10 +242,8 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                   </div>
                 </div>
 
-                {/* Program Kerja List */}
                 {isExpanded && (
                   <div className="border-t border-slate-200 bg-slate-50 relative">
-                    {/* Visual left line connector */}
                     <div className="absolute left-[36px] top-0 bottom-0 w-px bg-slate-200 z-0"></div>
 
                     {strategy.programKerja.length === 0 ? (
@@ -259,13 +254,11 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                         const keterangan = KETERANGAN_OPTIONS.find((k) => k.value === pk.keterangan);
                         return (
                           <div key={pk.id} className="border-b border-slate-200 last:border-0 relative z-10 hover:bg-slate-100/50 transition-colors">
-                            {/* PK Header */}
                             <div
                               className="flex items-center gap-3 pr-5 pl-12 py-3.5 cursor-pointer transition-colors relative"
                               onClick={() => toggleProker(pk.id)}
                             >
                               <div className="relative">
-                                {/* Connector arm from Strategy line */}
                                 <div className="absolute right-full top-1/2 w-[12px] h-px bg-slate-300 -translate-y-1/2"></div>
                                 <div className="w-7 h-7 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center flex-shrink-0 z-10 relative">
                                   <span className="text-xs font-bold text-slate-700">{pk.number}</span>
@@ -313,13 +306,10 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                               </div>
                             </div>
 
-                            {/* Action Plans */}
                             {pkExpanded && (
                               <div className="relative pr-5 pb-4 pl-[88px] bg-slate-100/80 border-t border-slate-200/60 pt-3 shadow-inner">
-                                {/* Vertical line dropping from PK badge */}
                                 <div className="absolute left-[62px] top-0 bottom-6 w-px bg-slate-300 z-0"></div>
 
-                                {/* RACI Row */}
                                 {(pk.raciAccountable || pk.raciResponsible) && (
                                   <div className="flex flex-wrap gap-4 py-2 mb-2 border-b border-slate-100 text-xs">
                                     {pk.raciResponsible && (
@@ -346,7 +336,6 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                       const plannedWeekIds = ap.taskTimelines.map((t) => t.weekId);
                                       return (
                                         <div key={ap.id} className="relative z-10 flex items-center gap-3 py-2 px-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-colors group">
-                                          {/* Connector arm from PK line */}
                                           <div className="absolute right-full top-1/2 w-[26px] h-px bg-slate-300 -translate-y-1/2"></div>
                                           <div className="w-6 h-6 rounded bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
                                             <span className="text-xs font-semibold text-slate-500">{ap.number}</span>
@@ -395,7 +384,6 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
         </div>
       )}
 
-      {/* Modals */}
       <AddStrategyModal
         open={addStrategyOpen}
         onClose={() => setAddStrategyOpen(false)}

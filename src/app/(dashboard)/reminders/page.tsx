@@ -16,13 +16,9 @@ export default async function RemindersPage() {
   const threeDaysLater = new Date(now);
   threeDaysLater.setDate(threeDaysLater.getDate() + 3);
 
-  // Fetch all action plans that are at-risk per divisi:
-  // SUPER_ADMIN lihat semua; user lain hanya divisi sendiri
-  // Kondisi at-risk: deadline dalam 3 hari ATAU status DELAY
   const atRiskRaw = await prisma.actionPlan.findMany({
     where: {
       AND: [
-        // Filter divisi (hanya berlaku untuk non-SUPER_ADMIN)
         ...(superAdmin
           ? []
           : [
@@ -32,16 +28,13 @@ export default async function RemindersPage() {
                 },
               },
             ]),
-        // Kondisi at-risk
         {
           OR: [
-            // Approaching or past deadline
             {
               programKerja: {
                 targetDate: { not: null, lte: threeDaysLater },
               },
             },
-            // Manually marked as DELAY in weekly progress
             {
               weeklyProgress: {
                 some: { status: "DELAY" },
@@ -65,7 +58,6 @@ export default async function RemindersPage() {
     orderBy: { programKerja: { targetDate: "asc" } },
   });
 
-  // Exclude completed action plans, deduplicate by id
   const seen = new Set<string>();
   const slaAlerts = atRiskRaw.filter((ap) => {
     if (seen.has(ap.id)) return false;
@@ -73,7 +65,6 @@ export default async function RemindersPage() {
     return ap.weeklyProgress[0]?.status !== "DONE";
   });
 
-  // Sent reminder history: SUPER_ADMIN lihat semua, lainnya filter per divisi
   const sentHistory = await prisma.reminder.findMany({
     where: {
       sent: true,
@@ -101,7 +92,6 @@ export default async function RemindersPage() {
     take: 30,
   });
 
-  // Users with whatsapp for sending notifications
   const users = isAdmin
     ? await prisma.user.findMany({
         select: { id: true, name: true, email: true, whatsappNumber: true },

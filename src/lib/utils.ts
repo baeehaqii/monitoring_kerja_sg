@@ -51,7 +51,7 @@ export function generateTargetDates(): { value: string; label: string }[] {
   const dates = [];
   for (let year = 2026; year <= 2028; year++) {
     for (let month = 1; month <= 12; month++) {
-      const d = new Date(year, month, 0); // last day of month
+      const d = new Date(year, month, 0);
       dates.push({
         value: d.toISOString(),
         label: format(d, "dd MMMM yyyy", { locale: idLocale }),
