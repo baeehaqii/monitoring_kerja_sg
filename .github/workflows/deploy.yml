@@ -36,7 +36,7 @@ jobs:
             git reset --hard FETCH_HEAD
 
             echo "==> Installing dependencies..."
-            npm install --frozen-lockfile
+            npm install --frozen-lockfile --cache /tmp/npm-cache-deploy
 
             echo "==> Generating Prisma client..."
             npx prisma generate
