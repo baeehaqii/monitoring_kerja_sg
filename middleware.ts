@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  response.headers.set("x-licensed-to", status.licensee);
+  response.headers.set("x-licensed-to", status.licensee.replace(/[^\x00-\xFF]/g, "").trim() || "Licensed");
   return response;
 }
 
