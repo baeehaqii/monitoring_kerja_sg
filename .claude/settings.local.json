@@ -12,7 +12,10 @@
       "Bash(npx next:*)",
       "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/*.*)",
       "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/src/app/\\\\\\(dashboard\\\\\\)/)",
-      "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/src/app/\\\\\\(dashboard\\\\\\)/weekly/)"
+      "Bash(ls -la /Volumes/DATA/Dev/monitoring_kerja_sg/src/app/\\\\\\(dashboard\\\\\\)/weekly/)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

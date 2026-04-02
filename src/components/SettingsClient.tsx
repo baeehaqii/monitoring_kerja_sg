@@ -6,7 +6,19 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { Plus, Calendar, Building2, ShieldCheck, Trash2 } from "lucide-react";
+import { Plus, Calendar, Building2, ShieldCheck, Trash2, MapPin, Pencil } from "lucide-react";
+
+type ClusterType = "GRAHA" | "GRIYA" | "SGM";
+const CLUSTER_TYPES: { value: ClusterType; label: string }[] = [
+  { value: "GRAHA", label: "GRAHA" },
+  { value: "GRIYA", label: "GRIYA" },
+  { value: "SGM", label: "SGM" },
+];
+const CLUSTER_BADGE: Record<ClusterType, string> = {
+  GRAHA: "bg-blue-50 text-blue-600",
+  GRIYA: "bg-green-50 text-green-600",
+  SGM: "bg-purple-50 text-purple-600",
+};
 
 type Week = { id: string; weekNumber: number; label: string };
 type Period = {
@@ -25,11 +37,19 @@ type Division = {
 type RaciType = "ACCOUNTABLE" | "RESPONSIBLE" | "CONSULTED" | "INFORMED";
 type RaciEntry = { id: string; role: string; type: RaciType; order: number };
 type RaciMatrix = { id: string; name: string; isDefault: boolean; entries: RaciEntry[] };
+type Project = {
+  id: string;
+  name: string;
+  cluster: string;
+  clusterType: ClusterType;
+  _count: { userProjects: number; strategies: number };
+};
 
 interface Props {
   periods: Period[];
   divisions: Division[];
   raciMatrices: RaciMatrix[];
+  projects: Project[];
 }
 
 const MONTHS = [
@@ -44,14 +64,18 @@ const RACI_LABELS: Record<RaciType, { label: string; color: string }> = {
   INFORMED:    { label: "Informed",    color: "bg-green-50 text-green-600 border-green-100" },
 };
 
-export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
+export function SettingsClient({ periods, divisions, raciMatrices, projects }: Props) {
   const router = useRouter();
   const [addPeriodOpen, setAddPeriodOpen] = useState(false);
   const [addDivisionOpen, setAddDivisionOpen] = useState(false);
   const [addRaciOpen, setAddRaciOpen] = useState(false);
+  const [addProjectOpen, setAddProjectOpen] = useState(false);
+  const [editProject, setEditProject] = useState<Project | null>(null);
   const [periodForm, setPeriodForm] = useState({ year: "2026", month: "4" });
   const [divisionName, setDivisionName] = useState("");
   const [raciForm, setRaciForm] = useState({ matrixId: "", role: "", type: "RESPONSIBLE" as RaciType });
+  const [projectForm, setProjectForm] = useState({ name: "", cluster: "", clusterType: "GRAHA" as ClusterType });
+  const [editProjectForm, setEditProjectForm] = useState({ name: "", cluster: "", clusterType: "GRAHA" as ClusterType });
   const [saving, setSaving] = useState(false);
 
   const defaultMatrix = raciMatrices.find((m) => m.isDefault) ?? raciMatrices[0];
@@ -80,6 +104,46 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
     setSaving(false);
     setAddDivisionOpen(false);
     setDivisionName("");
+    router.refresh();
+  }
+
+  async function addProject(e: React.FormEvent) {
+    e.preventDefault();
+    if (!projectForm.name.trim() || !projectForm.cluster.trim()) return;
+    setSaving(true);
+    await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(projectForm),
+    });
+    setSaving(false);
+    setAddProjectOpen(false);
+    setProjectForm({ name: "", cluster: "", clusterType: "GRAHA" });
+    router.refresh();
+  }
+
+  async function deleteProject(id: string, name: string) {
+    if (!confirm(`Hapus proyek "${name}"? Semua akses pengguna ke proyek ini akan dihapus.`)) return;
+    await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    router.refresh();
+  }
+
+  function openEditProject(p: Project) {
+    setEditProject(p);
+    setEditProjectForm({ name: p.name, cluster: p.cluster, clusterType: p.clusterType });
+  }
+
+  async function handleEditProject(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editProject) return;
+    setSaving(true);
+    await fetch(`/api/projects/${editProject.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editProjectForm),
+    });
+    setSaving(false);
+    setEditProject(null);
     router.refresh();
   }
 
@@ -193,6 +257,56 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
         </Card>
       </div>
 
+      <Card className="flex flex-col">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="flex flex-col">
+              <CardTitle>Proyek</CardTitle>
+              <CardSubTitle>Kelola proyek dan klaster (GRAHA / GRIYA / SGM)</CardSubTitle>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => setAddProjectOpen(true)} icon={<Plus className="w-4 h-4" />}>
+            Tambah
+          </Button>
+        </CardHeader>
+        <div className="overflow-y-auto max-h-[340px] space-y-2 pr-1">
+          {projects.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-4">Belum ada proyek</p>
+          ) : (
+            projects.map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg border border-slate-100 hover:bg-slate-50 group">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${CLUSTER_BADGE[p.clusterType]}`}>
+                    {p.clusterType}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{p.name}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{p.cluster} · {p._count.userProjects} user · {p._count.strategies} strategi</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0 ml-2">
+                  <button
+                    onClick={() => openEditProject(p)}
+                    className="p-1 text-slate-300 hover:text-[#0f52ba] transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => deleteProject(p.id, p.name)}
+                    className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
       {defaultMatrix && (
         <Card className="flex flex-col">
           <CardHeader>
@@ -290,6 +404,76 @@ export function SettingsClient({ periods, divisions, raciMatrices }: Props) {
           />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setAddDivisionOpen(false)}>Batal</Button>
+            <Button type="submit" loading={saving}>Simpan</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!editProject} onClose={() => setEditProject(null)} title="Edit Proyek">
+        <form onSubmit={handleEditProject} className="space-y-4">
+          <Input
+            label="Nama Proyek"
+            required
+            value={editProjectForm.name}
+            onChange={(e) => setEditProjectForm({ ...editProjectForm, name: e.target.value })}
+            placeholder="mis. TH Bumiayu"
+          />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tipe Klaster <span className="text-red-500">*</span></label>
+            <select
+              value={editProjectForm.clusterType}
+              onChange={(e) => setEditProjectForm({ ...editProjectForm, clusterType: e.target.value as ClusterType })}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0f52ba]/20 focus:border-[#0f52ba]"
+            >
+              {CLUSTER_TYPES.map((ct) => (
+                <option key={ct.value} value={ct.value}>{ct.label}</option>
+              ))}
+            </select>
+          </div>
+          <Input
+            label="Klaster (mis. GRAHA I, GRIYA II)"
+            required
+            value={editProjectForm.cluster}
+            onChange={(e) => setEditProjectForm({ ...editProjectForm, cluster: e.target.value })}
+            placeholder="mis. GRAHA I"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setEditProject(null)}>Batal</Button>
+            <Button type="submit" loading={saving}>Simpan Perubahan</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={addProjectOpen} onClose={() => setAddProjectOpen(false)} title="Tambah Proyek">
+        <form onSubmit={addProject} className="space-y-4">
+          <Input
+            label="Nama Proyek"
+            required
+            value={projectForm.name}
+            onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
+            placeholder="mis. TH Bumiayu"
+          />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tipe Klaster <span className="text-red-500">*</span></label>
+            <select
+              value={projectForm.clusterType}
+              onChange={(e) => setProjectForm({ ...projectForm, clusterType: e.target.value as ClusterType })}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0f52ba]/20 focus:border-[#0f52ba]"
+            >
+              {CLUSTER_TYPES.map((ct) => (
+                <option key={ct.value} value={ct.value}>{ct.label}</option>
+              ))}
+            </select>
+          </div>
+          <Input
+            label="Klaster (mis. GRAHA I, GRIYA II)"
+            required
+            value={projectForm.cluster}
+            onChange={(e) => setProjectForm({ ...projectForm, cluster: e.target.value })}
+            placeholder="mis. GRAHA I"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setAddProjectOpen(false)}>Batal</Button>
             <Button type="submit" loading={saving}>Simpan</Button>
           </div>
         </form>

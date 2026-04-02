@@ -88,16 +88,19 @@ type DashboardData = {
 interface Props {
   data: DashboardData;
   divisions: { id: string; name: string }[];
+  projects: { id: string; name: string; cluster: string }[];
   userName: string;
   userDivisionName?: string | null;
+  isSuperAdmin: boolean;
 }
 
-export function DashboardClient({ data, divisions, userName, userDivisionName }: Props) {
+export function DashboardClient({ data, divisions, projects, userName, userDivisionName, isSuperAdmin }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [animKey, setAnimKey] = useState(0);
 
   const currentDiv = searchParams.get("div") || "";
+  const currentProject = searchParams.get("project") || "";
   const currentDate = searchParams.get("date") || "";
 
   useEffect(() => {
@@ -135,9 +138,25 @@ export function DashboardClient({ data, divisions, userName, userDivisionName }:
           userDivisionName ? ` · Divisi ${userDivisionName}` : " · Semua Divisi"
         }`}
         action={
-          <div className="flex justify-end items-center gap-3">
-            <Filter className="w-4 h-4 text-slate-400" />
-            {data.isAdmin && (
+          <div className="flex justify-end items-center gap-3 flex-wrap">
+            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+            {/* Project filter — shown to all users with at least one project */}
+            {projects.length > 0 && (
+              <select
+                value={currentProject}
+                onChange={(e) => handleFilterChange("project", e.target.value)}
+                className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f52ba]/20 transition-all font-medium text-slate-700"
+              >
+                <option value="">Semua Proyek</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.cluster})
+                  </option>
+                ))}
+              </select>
+            )}
+            {/* Division filter — SUPER_ADMIN only */}
+            {isSuperAdmin && data.isAdmin && (
               <select
                 value={currentDiv}
                 onChange={(e) => handleFilterChange("div", e.target.value)}

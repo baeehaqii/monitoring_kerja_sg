@@ -22,6 +22,24 @@ export const GET = withHandler(async () => {
   return NextResponse.json(users);
 });
 
+export const DELETE = withHandler(async (req: NextRequest) => {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { ids } = await req.json() as { ids: string[] };
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: "ids required" }, { status: 400 });
+  }
+
+  // Prevent deleting own account
+  const filteredIds = ids.filter((id) => id !== session.user.id);
+  await prisma.user.deleteMany({ where: { id: { in: filteredIds } } });
+
+  return NextResponse.json({ deleted: filteredIds.length });
+});
+
 export const POST = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {

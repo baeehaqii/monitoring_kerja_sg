@@ -9,22 +9,37 @@ export default async function UsersPage() {
   if (!session?.user) return null;
   if (session.user.role !== "SUPER_ADMIN") redirect("/");
 
-  const [users, divisions] = await Promise.all([
+  const [users, divisions, projects] = await Promise.all([
     prisma.user.findMany({
       select: {
         id: true, name: true, email: true, role: true,
         divisionId: true, whatsappNumber: true, createdAt: true,
         division: { select: { name: true } },
+        userProjects: {
+          select: {
+            projectId: true,
+            project: { select: { id: true, name: true, cluster: true } },
+          },
+        },
       },
       orderBy: { name: "asc" },
     }),
     prisma.division.findMany({ orderBy: { name: "asc" } }),
+    prisma.project.findMany({
+      orderBy: [{ clusterType: "asc" }, { cluster: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, cluster: true, clusterType: true },
+    }),
   ]);
 
   return (
     <div>
       <Header title="Manajemen Pengguna" subtitle="Kelola akun dan akses pengguna" />
-      <UsersClient users={JSON.parse(JSON.stringify(users))} divisions={JSON.parse(JSON.stringify(divisions))} isSuperAdmin={session.user.role === "SUPER_ADMIN"} />
+      <UsersClient
+        users={JSON.parse(JSON.stringify(users))}
+        divisions={JSON.parse(JSON.stringify(divisions))}
+        projects={JSON.parse(JSON.stringify(projects))}
+        isSuperAdmin={session.user.role === "SUPER_ADMIN"}
+      />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -21,15 +20,47 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
+        // Autentikasi via sistem utama Siproper
+        const authUrl = process.env.SIPROPER_AUTH_URL;
+        if (!authUrl) throw new Error("SIPROPER_AUTH_URL not configured");
+
+        let externalUser: { email: string; firstname: string; username: string } | null = null;
+        try {
+          const res = await fetch(authUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
+          const json = await res.json();
+          if (!res.ok || json?.status !== "success") return null;
+          externalUser = json.data?.user ?? null;
+        } catch (err) {
+          console.error("[auth] external API error:", err);
+          return null;
+        }
+
+        if (!externalUser) return null;
+
+        // Ambil atau buat user di DB lokal
+        let user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
           include: { division: true },
         });
 
-        if (!user) return null;
-
-        const isValid = await compare(credentials.password as string, user.password);
-        if (!isValid) return null;
+        if (!user) {
+          const displayName = externalUser.firstname || externalUser.username || (credentials.email as string).split("@")[0];
+          user = await prisma.user.create({
+            data: {
+              name: displayName,
+              email: credentials.email as string,
+              role: "MEMBER",
+            },
+            include: { division: true },
+          });
+        }
 
         return {
           id: user.id,

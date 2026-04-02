@@ -3,55 +3,63 @@ import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { isSuperAdmin, canManage } from "@/lib/permissions";
 
+async function getUserAccessibleProjectIds(userId: string): Promise<string[]> {
+  const records = await prisma.userProject.findMany({
+    where: { userId },
+    select: { projectId: true },
+  });
+  return records.map((r) => r.projectId);
+}
+
 async function getDashboardData(
-  targetDivId: string | null,
   role: string,
+  accessibleProjectIds: string[] | null,
+  selectedProjectId: string | null,
+  selectedDivId: string | null,
   dateFilter: string | null
 ) {
   const superAdmin = isSuperAdmin(role);
 
   let dateFilterWhere: any = undefined;
   if (dateFilter === "today") {
-    const d = new Date(); d.setHours(0,0,0,0);
+    const d = new Date(); d.setHours(0, 0, 0, 0);
     dateFilterWhere = { gte: d };
   } else if (dateFilter === "7days") {
-    const d = new Date(); d.setDate(d.getDate() - 7); d.setHours(0,0,0,0);
+    const d = new Date(); d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0);
     dateFilterWhere = { gte: d };
   } else if (dateFilter === "month") {
-    const d = new Date(); d.setDate(1); d.setHours(0,0,0,0);
+    const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0);
     dateFilterWhere = { gte: d };
   } else if (dateFilter === "lastMonth") {
-    const d = new Date(); d.setMonth(d.getMonth() - 1); d.setDate(1); d.setHours(0,0,0,0);
-    const end = new Date(); end.setDate(0); end.setHours(23,59,59,999);
+    const d = new Date(); d.setMonth(d.getMonth() - 1); d.setDate(1); d.setHours(0, 0, 0, 0);
+    const end = new Date(); end.setDate(0); end.setHours(23, 59, 59, 999);
     dateFilterWhere = { gte: d, lte: end };
   }
 
-  const hasDivFilter = targetDivId !== null;
-  const divisionIdFilter = hasDivFilter ? targetDivId : undefined;
-
-  const blockAll = !superAdmin && !targetDivId;
-
-  const apDivWhere = blockAll
-    ? { programKerja: { strategy: { divisionId: "___no_match___" } } }
-    : hasDivFilter
-      ? { programKerja: { strategy: { divisionId: divisionIdFilter } } }
-      : {};
-
-  const apWhere: any = { ...apDivWhere };
-  if (dateFilterWhere) {
-    apWhere.createdAt = dateFilterWhere;
+  // Build strategy-level filter
+  let strategyFilter: any = {};
+  if (superAdmin) {
+    if (selectedProjectId) strategyFilter = { projectId: selectedProjectId };
+    else if (selectedDivId) strategyFilter = { divisionId: selectedDivId };
+  } else {
+    if (!accessibleProjectIds || accessibleProjectIds.length === 0) {
+      strategyFilter = { projectId: "___no_match___" };
+    } else if (selectedProjectId && accessibleProjectIds.includes(selectedProjectId)) {
+      strategyFilter = { projectId: selectedProjectId };
+    } else {
+      strategyFilter = { projectId: { in: accessibleProjectIds } };
+    }
   }
 
-  const wpDivWhere = blockAll
-    ? { actionPlan: { programKerja: { strategy: { divisionId: "___no_match___" } } } }
-    : hasDivFilter
-      ? { actionPlan: { programKerja: { strategy: { divisionId: divisionIdFilter } } } }
-      : {};
+  const apWhere: any = {
+    programKerja: { strategy: strategyFilter },
+    ...(dateFilterWhere ? { createdAt: dateFilterWhere } : {}),
+  };
 
-  const wpWhere: any = { ...wpDivWhere };
-  if (dateFilterWhere) {
-    wpWhere.updatedAt = dateFilterWhere;
-  }
+  const wpWhere: any = {
+    actionPlan: { programKerja: { strategy: strategyFilter } },
+    ...(dateFilterWhere ? { updatedAt: dateFilterWhere } : {}),
+  };
 
   const [totalActionPlans, statusCounts, recentProgress, delayedTasks, allAPs] =
     await Promise.all([
@@ -78,7 +86,12 @@ async function getDashboardData(
               programKerja: {
                 select: {
                   name: true,
-                  strategy: { select: { division: { select: { name: true } } } },
+                  strategy: {
+                    select: {
+                      division: { select: { name: true } },
+                      project: { select: { name: true } },
+                    },
+                  },
                 },
               },
             },
@@ -101,7 +114,12 @@ async function getDashboardData(
                 select: {
                   name: true,
                   targetDate: true,
-                  strategy: { select: { division: { select: { name: true } } } },
+                  strategy: {
+                    select: {
+                      division: { select: { name: true } },
+                      project: { select: { name: true } },
+                    },
+                  },
                 },
               },
             },
@@ -119,7 +137,11 @@ async function getDashboardData(
           },
           programKerja: {
             select: {
-              strategy: { select: { division: { select: { id: true, name: true } } } },
+              strategy: {
+                select: {
+                  division: { select: { id: true, name: true } },
+                },
+              },
             },
           },
         },
@@ -137,28 +159,12 @@ async function getDashboardData(
   const delay = statusMap["DELAY"] ?? 0;
   const total = done + onProgress + notStarted + delay;
 
-  type DivStats = {
-    id: string;
-    name: string;
-    done: number;
-    onProgress: number;
-    delay: number;
-    notStarted: number;
-    total: number;
-  };
+  type DivStats = { id: string; name: string; done: number; onProgress: number; delay: number; notStarted: number; total: number };
   const divMap = new Map<string, DivStats>();
   for (const ap of allAPs) {
     const div = ap.programKerja.strategy.division;
     if (!divMap.has(div.id)) {
-      divMap.set(div.id, {
-        id: div.id,
-        name: div.name,
-        done: 0,
-        onProgress: 0,
-        delay: 0,
-        notStarted: 0,
-        total: 0,
-      });
+      divMap.set(div.id, { id: div.id, name: div.name, done: 0, onProgress: 0, delay: 0, notStarted: 0, total: 0 });
     }
     const ds = divMap.get(div.id)!;
     const st = ap.weeklyProgress[0]?.status ?? "NOT_STARTED";
@@ -169,10 +175,6 @@ async function getDashboardData(
     else ds.notStarted++;
   }
 
-  const divisionStats = Array.from(divMap.values()).sort(
-    (a, b) => b.total - a.total
-  );
-
   return {
     totalActionPlans,
     done,
@@ -182,36 +184,54 @@ async function getDashboardData(
     total,
     recentProgress,
     delayedTasks,
-    divisionStats,
+    divisionStats: Array.from(divMap.values()).sort((a, b) => b.total - a.total),
     isAdmin: canManage(role),
   };
 }
 
 export default async function DashboardPage(
-  props: { searchParams: Promise<{ div?: string; date?: string }> }
+  props: { searchParams: Promise<{ div?: string; project?: string; date?: string }> }
 ) {
   const searchParams = await props.searchParams;
   const session = await auth();
   if (!session?.user) return null;
 
   const superAdmin = isSuperAdmin(session.user.role);
-
-  const filterDivId = superAdmin
-    ? (searchParams.div || null)
-    : (session.user.divisionId ?? null);
+  const selectedProjectId = searchParams.project || null;
+  const selectedDivId = superAdmin ? (searchParams.div || null) : null;
   const filterDate = searchParams.date || null;
 
-  const [data, divisions] = await Promise.all([
-    getDashboardData(filterDivId, session.user.role, filterDate),
-    prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+  const accessibleProjectIds = superAdmin
+    ? null
+    : await getUserAccessibleProjectIds(session.user.id);
+
+  const [data, divisions, projects] = await Promise.all([
+    getDashboardData(session.user.role, accessibleProjectIds, selectedProjectId, selectedDivId, filterDate),
+    superAdmin
+      ? prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+      : Promise.resolve([]),
+    superAdmin
+      ? prisma.project.findMany({
+          orderBy: [{ clusterType: "asc" }, { cluster: "asc" }, { name: "asc" }],
+          select: { id: true, name: true, cluster: true },
+        })
+      : accessibleProjectIds && accessibleProjectIds.length > 0
+        ? prisma.project.findMany({
+            where: { id: { in: accessibleProjectIds } },
+            orderBy: [{ clusterType: "asc" }, { cluster: "asc" }, { name: "asc" }],
+            select: { id: true, name: true, cluster: true },
+          })
+        : Promise.resolve([]),
   ]);
 
   return (
-    <DashboardClient 
-      data={data} 
-      divisions={divisions} 
-      userName={session.user.name || "User"} 
-      userDivisionName={session.user.divisionName || ""} 
+    <DashboardClient
+      data={data}
+      divisions={divisions}
+      projects={projects}
+      userName={session.user.name || "User"}
+      userDivisionName={session.user.divisionName || ""}
+      isSuperAdmin={superAdmin}
     />
   );
 }

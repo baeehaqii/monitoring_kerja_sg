@@ -11,7 +11,7 @@ model User {
   id             String     @id @default(cuid())
   name           String
   email          String     @unique
-  password       String
+  password       String?
   role           UserRole   @default(MEMBER)
   division       Division?  @relation(fields: [divisionId], references: [id])
   divisionId     String?
@@ -19,12 +19,21 @@ model User {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   reminders      Reminder[]
+  userProjects   UserProject[]
 }
 
 enum UserRole {
   SUPER_ADMIN
   ADMIN
+  DIREKTUR_BISNIS
+  GENERAL_MANAGER
   MEMBER
+}
+
+enum ClusterType {
+  GRAHA
+  GRIYA
+  SGM
 }
 
 model Division {
@@ -71,6 +80,8 @@ model Strategy {
   divisionId   String
   period       Period         @relation(fields: [periodId], references: [id])
   periodId     String
+  project      Project?       @relation(fields: [projectId], references: [id])
+  projectId    String?
   number       Int
   name         String
   programKerja ProgramKerja[]
@@ -78,6 +89,28 @@ model Strategy {
   updatedAt    DateTime       @updatedAt
 
   @@unique([divisionId, periodId, number])
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  cluster      String
+  clusterType  ClusterType
+  userProjects UserProject[]
+  strategies   Strategy[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model UserProject {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, projectId])
 }
 
 model ProgramKerja {
