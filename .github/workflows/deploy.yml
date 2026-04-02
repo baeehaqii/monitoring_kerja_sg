@@ -32,9 +32,8 @@ jobs:
 
             echo "==> Pulling latest code..."
             git config --global --add safe.directory $PROJECT_DIR
-            git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/baeehaqii/monitoring_kerja_sg.git
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch https://x-access-token:${GH_TOKEN}@github.com/baeehaqii/monitoring_kerja_sg.git main
+            git reset --hard FETCH_HEAD
 
             echo "==> Installing dependencies..."
             npm install --frozen-lockfile
