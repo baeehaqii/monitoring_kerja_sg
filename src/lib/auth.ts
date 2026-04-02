@@ -52,11 +52,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user) {
           const displayName = externalUser.firstname || externalUser.username || (credentials.email as string).split("@")[0];
+          // Jika belum ada SUPER_ADMIN sama sekali, jadikan user pertama sebagai SUPER_ADMIN
+          const superAdminCount = await prisma.user.count({ where: { role: "SUPER_ADMIN" } });
           user = await prisma.user.create({
             data: {
               name: displayName,
               email: credentials.email as string,
-              role: "MEMBER",
+              role: superAdminCount === 0 ? "SUPER_ADMIN" : "MEMBER",
             },
             include: { division: true },
           });
