@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -21,7 +22,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Autentikasi via sistem utama Siproper
+        const email = credentials.email as string;
+        const password = credentials.password as string;
+
+        // Cek user di DB lokal terlebih dahulu
+        const localUser = await prisma.user.findUnique({
+          where: { email },
+          include: { division: true },
+        });
+
+        // Jika user punya password lokal → verifikasi langsung tanpa external API
+        if (localUser?.password) {
+          const valid = await compare(password, localUser.password);
+          if (!valid) return null;
+          return {
+            id: localUser.id,
+            name: localUser.name,
+            email: localUser.email,
+            role: localUser.role,
+            divisionId: localUser.divisionId,
+            divisionName: localUser.division?.name ?? null,
+          };
+        }
+
+        // Fallback: autentikasi via sistem utama Siproper
         const authUrl = process.env.SIPROPER_AUTH_URL;
         if (!authUrl) throw new Error("SIPROPER_AUTH_URL not configured");
 
@@ -30,10 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const res = await fetch(authUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
+            body: JSON.stringify({ email, password }),
           });
           const json = await res.json();
           if (!res.ok || json?.status !== "success") return null;
@@ -46,19 +67,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!externalUser) return null;
 
         // Ambil atau buat user di DB lokal
-        let user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-          include: { division: true },
-        });
-
+        let user = localUser;
         if (!user) {
-          const displayName = externalUser.firstname || externalUser.username || (credentials.email as string).split("@")[0];
-          // Jika belum ada SUPER_ADMIN sama sekali, jadikan user pertama sebagai SUPER_ADMIN
+          const displayName = externalUser.firstname || externalUser.username || email.split("@")[0];
           const superAdminCount = await prisma.user.count({ where: { role: "SUPER_ADMIN" } });
           user = await prisma.user.create({
             data: {
               name: displayName,
-              email: credentials.email as string,
+              email,
               role: superAdminCount === 0 ? "SUPER_ADMIN" : "MEMBER",
             },
             include: { division: true },
@@ -83,6 +99,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role?: string }).role;
         token.divisionId = (user as { divisionId?: string | null }).divisionId;
         token.divisionName = (user as { divisionName?: string | null }).divisionName;
+      } else if (token.id) {
+        // Refresh role & division from DB on every token refresh so role changes take effect without re-login
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, divisionId: true, division: { select: { name: true } } },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.divisionId = dbUser.divisionId;
+          token.divisionName = dbUser.division?.name ?? null;
+        }
       }
       return token;
     },

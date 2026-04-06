@@ -8,6 +8,54 @@ import { Input, Select } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Plus, User, Pencil, Trash2, FolderOpen } from "lucide-react";
 
+type FormState = {
+  name: string; email: string; password: string;
+  role: string; divisionId: string; whatsappNumber: string;
+};
+
+interface FormContentProps {
+  form: FormState;
+  editUser: boolean;
+  divisions: { id: string; name: string }[];
+  onChange: (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+}
+
+function FormContent({ form, editUser, divisions, onChange }: FormContentProps) {
+  return (
+    <div className="space-y-4">
+      <Input label="Nama" required value={form.name} onChange={onChange("name")} placeholder="Nama lengkap" />
+      {!editUser && (
+        <Input label="Email" type="email" required value={form.email} onChange={onChange("email")} placeholder="email@domain.com" />
+      )}
+      <Input
+        label={editUser ? "Password Baru (kosongkan jika tidak diubah)" : "Password"}
+        type="password"
+        required={!editUser}
+        value={form.password}
+        onChange={onChange("password")}
+        placeholder="••••••••"
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <Select label="Role" value={form.role} onChange={onChange("role")} options={ROLES} />
+        <Select
+          label="Divisi"
+          value={form.divisionId}
+          onChange={onChange("divisionId")}
+          options={divisions.map((d) => ({ value: d.id, label: d.name }))}
+          placeholder="— Pilih Divisi —"
+        />
+      </div>
+      <Input
+        label="No. WhatsApp"
+        value={form.whatsappNumber}
+        onChange={onChange("whatsappNumber")}
+        placeholder="08xxxxxxxxxx"
+        hint="Untuk pengiriman reminder SLA"
+      />
+    </div>
+  );
+}
+
 type UserItem = {
   id: string; name: string; email: string; role: string;
   divisionId: string | null; whatsappNumber: string | null; createdAt: string;
@@ -165,47 +213,6 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
     setForm({ name: "", email: "", password: "", role: "MEMBER", divisionId: "", whatsappNumber: "" });
   }
 
-  const f = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm({ ...form, [field]: e.target.value });
-
-  const FormContent = () => (
-    <div className="space-y-4">
-      <Input label="Nama" required value={form.name} onChange={f("name")} placeholder="Nama lengkap" />
-      {!editUser && (
-        <Input label="Email" type="email" required value={form.email} onChange={f("email")} placeholder="email@domain.com" />
-      )}
-      <Input
-        label={editUser ? "Password Baru (kosongkan jika tidak diubah)" : "Password"}
-        type="password"
-        required={!editUser}
-        value={form.password}
-        onChange={f("password")}
-        placeholder="••••••••"
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <Select
-          label="Role"
-          value={form.role}
-          onChange={f("role")}
-          options={ROLES}
-        />
-        <Select
-          label="Divisi"
-          value={form.divisionId}
-          onChange={f("divisionId")}
-          options={divisions.map((d) => ({ value: d.id, label: d.name }))}
-          placeholder="— Pilih Divisi —"
-        />
-      </div>
-      <Input
-        label="No. WhatsApp"
-        value={form.whatsappNumber}
-        onChange={f("whatsappNumber")}
-        placeholder="08xxxxxxxxxx"
-        hint="Untuk pengiriman reminder SLA"
-      />
-    </div>
-  );
 
   // Group projects by clusterType for the access modal
   const projectsByType = projects.reduce<Record<string, Project[]>>((acc, p) => {
@@ -341,7 +348,12 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
       {/* Add user modal */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Tambah Pengguna" size="lg">
         <form onSubmit={handleAdd} className="space-y-4">
-          <FormContent />
+          <FormContent
+            form={form}
+            editUser={false}
+            divisions={divisions}
+            onChange={(field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))}
+          />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setAddOpen(false)}>Batal</Button>
             <Button type="submit" loading={saving}>Simpan</Button>
@@ -352,7 +364,12 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
       {/* Edit user modal */}
       <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Edit Pengguna" size="lg">
         <form onSubmit={handleEdit} className="space-y-4">
-          <FormContent />
+          <FormContent
+            form={form}
+            editUser={true}
+            divisions={divisions}
+            onChange={(field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))}
+          />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditUser(null)}>Batal</Button>
             <Button type="submit" loading={saving}>Simpan Perubahan</Button>
