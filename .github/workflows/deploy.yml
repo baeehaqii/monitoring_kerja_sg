@@ -32,6 +32,13 @@ jobs:
 
             echo "==> Pulling latest code..."
             git config --global --add safe.directory $PROJECT_DIR
+
+            # Fix ownership jika .git dimiliki user lain (penyebab Permission denied)
+            if [ -d "$PROJECT_DIR/.git" ]; then
+              sudo chown -R $(whoami):$(whoami) $PROJECT_DIR/.git 2>/dev/null || \
+              chown -R $(whoami):$(whoami) $PROJECT_DIR/.git 2>/dev/null || true
+            fi
+
             git fetch https://x-access-token:${GH_TOKEN}@github.com/baeehaqii/monitoring_kerja_sg.git main
             git reset --hard FETCH_HEAD
 
