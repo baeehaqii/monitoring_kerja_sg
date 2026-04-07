@@ -4,7 +4,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-type Week = { id: string; label: string; weekNumber: number };
+type Week = { id: string; label: string; weekNumber: number; startDate: string; endDate: string };
 
 interface Props {
   open: boolean;
@@ -16,6 +16,7 @@ interface Props {
 
 export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuccess }: Props) {
   const [name, setName] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const [selectedWeeks, setSelectedWeeks] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,13 @@ export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuc
   useEffect(() => {
     if (actionPlan && open) {
       setName(actionPlan.name || "");
+      // Format targetDate ke yyyy-MM-dd
+      if (actionPlan.targetDate) {
+        const d = new Date(actionPlan.targetDate);
+        setTargetDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+      } else {
+        setTargetDate("");
+      }
       const currentWeeks = new Set<string>();
       if (actionPlan.taskTimelines && Array.isArray(actionPlan.taskTimelines)) {
         actionPlan.taskTimelines.forEach((t: any) => {
@@ -42,6 +50,21 @@ export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuc
     });
   }
 
+  function handleTargetDateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setTargetDate(val);
+    if (!val) return;
+    const date = new Date(val);
+    const matched = allWeeks.find((w) => {
+      const start = new Date(w.startDate);
+      const end = new Date(w.endDate);
+      return date >= start && date <= end;
+    });
+    if (matched) {
+      setSelectedWeeks(new Set([matched.id]));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -52,6 +75,7 @@ export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuc
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
+        targetDate: targetDate || null,
         plannedWeekIds: Array.from(selectedWeeks),
       }),
     });
@@ -78,9 +102,17 @@ export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuc
           placeholder="Deskripsi action plan..."
         />
 
+        <Input
+          label="Target Date"
+          type="date"
+          value={targetDate}
+          onChange={handleTargetDateChange}
+          hint="Otomatis memilih minggu yang sesuai"
+        />
+
         {allWeeks.length > 0 && (
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2">Timeline (pilih minggu yang direncanakan)</p>
+            <p className="text-sm font-medium text-slate-700 mb-2">Timeline (minggu yang direncanakan)</p>
             <div className="flex flex-wrap gap-2">
               {allWeeks.map((w) => {
                 const sel = selectedWeeks.has(w.id);
@@ -89,6 +121,7 @@ export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuc
                     key={w.id}
                     type="button"
                     onClick={() => toggleWeek(w.id)}
+                    title={`${w.label}`}
                     className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
                       sel
                         ? "bg-[#0f52ba] text-white border-[#0f52ba]"
@@ -101,7 +134,7 @@ export function EditActionPlanModal({ open, onClose, actionPlan, allWeeks, onSuc
               })}
             </div>
             {selectedWeeks.size > 0 && (
-               <p className="text-xs text-slate-400 mt-1">{selectedWeeks.size} minggu dipilih</p>
+              <p className="text-xs text-slate-400 mt-1">{selectedWeeks.size} minggu dipilih</p>
             )}
           </div>
         )}

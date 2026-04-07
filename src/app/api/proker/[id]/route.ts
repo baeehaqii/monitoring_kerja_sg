@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withHandler } from "@/lib/api-handler";
+import { canManage } from "@/lib/permissions";
 
 export const GET = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
@@ -31,16 +32,16 @@ export const GET = withHandler(async (_: NextRequest, { params }: { params: Prom
 export const PUT = withHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManage(session.user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json();
-  const { name, targetDate, keterangan, raciAccountable, raciResponsible, raciConsulted, raciInformed } = body;
+  const { name, keterangan, raciAccountable, raciResponsible, raciConsulted, raciInformed } = body;
 
   const pk = await prisma.programKerja.update({
     where: { id },
     data: {
       name,
-      targetDate: targetDate ? new Date(targetDate) : null,
       keterangan: keterangan || null,
       raciAccountable: raciAccountable || null,
       raciResponsible: raciResponsible || null,
@@ -55,7 +56,7 @@ export const PUT = withHandler(async (req: NextRequest, { params }: { params: Pr
 export const DELETE = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!canManage(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

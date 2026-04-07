@@ -4,7 +4,7 @@ import Link from "next/link";
 
 interface HeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   action?: React.ReactNode;
 }
 
@@ -13,7 +13,11 @@ export function Header({ title, subtitle, action }: HeaderProps) {
     <div className="flex items-start justify-between mb-6">
       <div>
         <h1 className="text-xl font-bold text-foreground">{title}</h1>
-        {subtitle && <p className="text-sm text-secondary mt-0.5">{subtitle}</p>}
+        {subtitle && (
+          typeof subtitle === "string"
+            ? <p className="text-sm text-secondary mt-0.5">{subtitle}</p>
+            : <div className="mt-0.5">{subtitle}</div>
+        )}
       </div>
       <div className="flex items-center gap-3">
         {action}

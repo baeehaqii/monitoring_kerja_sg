@@ -36,7 +36,6 @@ async function quickAddRaci(matrixId: string, type: RaciType, role: string): Pro
 export function EditProkerModal({ open, onClose, programKerja, onSuccess, raciMatrix }: Props) {
   const [form, setForm] = useState({
     name: "",
-    targetDate: "",
     keterangan: "",
     raciAccountable: "",
     raciResponsible: "",
@@ -55,17 +54,8 @@ export function EditProkerModal({ open, onClose, programKerja, onSuccess, raciMa
 
   useEffect(() => {
     if (programKerja && open) {
-      let td = "";
-      if (programKerja.targetDate) {
-        const dateObj = new Date(programKerja.targetDate);
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const day = String(dateObj.getDate()).padStart(2, "0");
-        td = `${year}-${month}-${day}`;
-      }
       setForm({
         name: programKerja.name || "",
-        targetDate: td,
         keterangan: programKerja.keterangan || "",
         raciAccountable: programKerja.raciAccountable || "",
         raciResponsible: programKerja.raciResponsible || "",
@@ -142,7 +132,6 @@ export function EditProkerModal({ open, onClose, programKerja, onSuccess, raciMa
           />
         </div>
         <Input label="Nama Program Kerja" required value={form.name} onChange={f("name")} placeholder="Nama program kerja..." />
-        <Input label="Target Date" type="date" required value={form.targetDate} onChange={f("targetDate")} />
 
         <div className="border-t border-slate-100 pt-3">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Matriks RACI</p>

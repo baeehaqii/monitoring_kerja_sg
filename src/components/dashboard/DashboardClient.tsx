@@ -85,16 +85,33 @@ type DashboardData = {
   isAdmin: boolean;
 };
 
+type ProjectItem = { id: string; name: string; cluster: string; clusterType: string };
+
+const ROLE_LABEL: Record<string, { label: string; className: string }> = {
+  SUPER_ADMIN:      { label: "Super Admin",      className: "bg-red-50 text-red-600 border border-red-200" },
+  ADMIN:            { label: "Admin",             className: "bg-amber-50 text-amber-600 border border-amber-200" },
+  GENERAL_MANAGER:  { label: "General Manager",   className: "bg-green-50 text-green-600 border border-green-200" },
+  DIREKTUR_BISNIS:  { label: "Direktur Bisnis",   className: "bg-blue-50 text-blue-600 border border-blue-200" },
+  MEMBER:           { label: "Member",            className: "bg-slate-100 text-slate-500 border border-slate-200" },
+};
+
+const CLUSTER_CHIP: Record<string, string> = {
+  GRAHA: "bg-blue-50 text-blue-600 border border-blue-200",
+  GRIYA: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  SGM:   "bg-purple-50 text-purple-600 border border-purple-200",
+};
+
 interface Props {
   data: DashboardData;
   divisions: { id: string; name: string }[];
-  projects: { id: string; name: string; cluster: string }[];
+  projects: ProjectItem[];
   userName: string;
-  userDivisionName?: string | null;
+  userRole: string;
+  userProjects: ProjectItem[];
   isSuperAdmin: boolean;
 }
 
-export function DashboardClient({ data, divisions, projects, userName, userDivisionName, isSuperAdmin }: Props) {
+export function DashboardClient({ data, divisions, projects, userName, userRole, userProjects, isSuperAdmin }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [animKey, setAnimKey] = useState(0);
@@ -134,9 +151,26 @@ export function DashboardClient({ data, divisions, projects, userName, userDivis
     <div className="flex flex-col gap-6">
       <Header
         title="Dashboard"
-        subtitle={`Selamat datang, ${userName}${
-          userDivisionName ? ` · Divisi ${userDivisionName}` : " · Semua Divisi"
-        }`}
+        subtitle={
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className="text-sm text-secondary">Selamat datang, <span className="font-semibold text-foreground">{userName}</span></span>
+            {/* Role chip */}
+            {ROLE_LABEL[userRole] && (
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${ROLE_LABEL[userRole].className}`}>
+                {ROLE_LABEL[userRole].label}
+              </span>
+            )}
+            {/* Project chips — hanya untuk non-superadmin yang punya project */}
+            {!isSuperAdmin && userProjects.map((p) => (
+              <span
+                key={p.id}
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${CLUSTER_CHIP[p.clusterType] ?? "bg-slate-100 text-slate-500 border border-slate-200"}`}
+              >
+                {p.cluster} · {p.name}
+              </span>
+            ))}
+          </div>
+        }
         action={
           <div className="flex justify-end items-center gap-3 flex-wrap">
             <Filter className="w-4 h-4 text-slate-400 shrink-0" />

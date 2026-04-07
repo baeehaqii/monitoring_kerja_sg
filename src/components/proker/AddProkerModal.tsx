@@ -39,9 +39,7 @@ async function quickAddRaci(
 
 export function AddProkerModal({ open, onClose, strategyId, onSuccess, raciMatrix }: Props) {
   const [form, setForm] = useState({
-    number: "",
     name: "",
-    targetDate: "",
     keterangan: "",
     raciAccountable: "",
     raciResponsible: "",
@@ -113,18 +111,20 @@ export function AddProkerModal({ open, onClose, strategyId, onSuccess, raciMatri
   return (
     <Modal open={open} onClose={onClose} title="Tambah Program Kerja" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Nomor" type="number" min="1" required value={form.number} onChange={f("number")} placeholder="1" />
-          <Select
-            label="Keterangan"
-            value={form.keterangan}
-            onChange={f("keterangan")}
-            options={KETERANGAN_OPTIONS.map((k) => ({ value: k.value, label: k.label }))}
-            placeholder="— Pilih —"
-          />
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <Input label="Nama Program Kerja" required value={form.name} onChange={f("name")} placeholder="Nama program kerja..." />
+          </div>
+          <div className="w-44">
+            <Select
+              label="Keterangan"
+              value={form.keterangan}
+              onChange={f("keterangan")}
+              options={KETERANGAN_OPTIONS.map((k) => ({ value: k.value, label: k.label }))}
+              placeholder="— Pilih —"
+            />
+          </div>
         </div>
-        <Input label="Nama Program Kerja" required value={form.name} onChange={f("name")} placeholder="Nama program kerja..." />
-        <Input label="Target Date" type="date" required value={form.targetDate} onChange={f("targetDate")} />
 
         <div className="border-t border-slate-100 pt-3">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Matriks RACI</p>

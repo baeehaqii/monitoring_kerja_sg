@@ -119,7 +119,6 @@ model ProgramKerja {
   strategyId      String
   number          Int
   name            String
-  targetDate      DateTime?
   keterangan      Keterangan?
   raciAccountable String?
   raciResponsible String?
@@ -138,6 +137,7 @@ model ActionPlan {
   programKerjaId String
   number         Int
   name           String
+  targetDate     DateTime?
   taskTimelines  TaskTimeline[]
   weeklyProgress WeeklyProgress[]
   reminders      Reminder[]

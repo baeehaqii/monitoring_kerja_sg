@@ -4,7 +4,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-type Week = { id: string; label: string; weekNumber: number };
+type Week = { id: string; label: string; weekNumber: number; startDate: string; endDate: string };
 
 interface Props {
   open: boolean;
@@ -20,6 +20,7 @@ export function AddActionPlanModal({ open, onClose, programKerja, allWeeks, onSu
     : 1);
 
   const [name, setName] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const [selectedWeeks, setSelectedWeeks] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,22 @@ export function AddActionPlanModal({ open, onClose, programKerja, allWeeks, onSu
       next.has(weekId) ? next.delete(weekId) : next.add(weekId);
       return next;
     });
+  }
+
+  function handleTargetDateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setTargetDate(val);
+    if (!val) return;
+    // Auto-select week yang mencakup tanggal ini
+    const date = new Date(val);
+    const matched = allWeeks.find((w) => {
+      const start = new Date(w.startDate);
+      const end = new Date(w.endDate);
+      return date >= start && date <= end;
+    });
+    if (matched) {
+      setSelectedWeeks(new Set([matched.id]));
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -44,6 +61,7 @@ export function AddActionPlanModal({ open, onClose, programKerja, allWeeks, onSu
         programKerjaId: programKerja.id,
         number: nextNum,
         name,
+        targetDate: targetDate || null,
         plannedWeekIds: Array.from(selectedWeeks),
       }),
     });
@@ -56,6 +74,7 @@ export function AddActionPlanModal({ open, onClose, programKerja, allWeeks, onSu
     }
 
     setName("");
+    setTargetDate("");
     setSelectedWeeks(new Set());
     onSuccess();
     onClose();
@@ -75,9 +94,17 @@ export function AddActionPlanModal({ open, onClose, programKerja, allWeeks, onSu
           placeholder="Deskripsi action plan..."
         />
 
+        <Input
+          label="Target Date"
+          type="date"
+          value={targetDate}
+          onChange={handleTargetDateChange}
+          hint="Otomatis memilih minggu yang sesuai"
+        />
+
         {allWeeks.length > 0 && (
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2">Timeline (pilih minggu yang direncanakan)</p>
+            <p className="text-sm font-medium text-slate-700 mb-2">Timeline (minggu yang direncanakan)</p>
             <div className="flex flex-wrap gap-2">
               {allWeeks.map((w) => {
                 const sel = selectedWeeks.has(w.id);
@@ -86,6 +113,7 @@ export function AddActionPlanModal({ open, onClose, programKerja, allWeeks, onSu
                     key={w.id}
                     type="button"
                     onClick={() => toggleWeek(w.id)}
+                    title={`${w.label}`}
                     className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
                       sel
                         ? "bg-[#0f52ba] text-white border-[#0f52ba]"

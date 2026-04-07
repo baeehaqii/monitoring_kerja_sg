@@ -1,24 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 
-type Division = { id: string; name: string };
 type Period = { id: string; name: string };
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  divisions: Division[];
   periods: Period[];
+  userDivisionId: string | null;
   onSuccess: () => void;
 }
 
-export function AddStrategyModal({ open, onClose, divisions, periods, onSuccess }: Props) {
-  const [form, setForm] = useState({ divisionId: "", periodId: "", number: "", name: "" });
+export function AddStrategyModal({ open, onClose, periods, userDivisionId, onSuccess }: Props) {
+  const [form, setForm] = useState({ periodId: "", name: "" });
+  const [nextNumber, setNextNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userDivisionId || !form.periodId) {
+      setNextNumber(null);
+      return;
+    }
+    const params = new URLSearchParams({
+      divisionId: userDivisionId,
+      periodId: form.periodId,
+      nextNumber: "1",
+    });
+    fetch(`/api/strategies?${params}`)
+      .then((r) => r.json())
+      .then((data) => setNextNumber(data.nextNumber))
+      .catch(() => setNextNumber(null));
+  }, [form.periodId, userDivisionId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +44,7 @@ export function AddStrategyModal({ open, onClose, divisions, periods, onSuccess 
     const res = await fetch("/api/strategies", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ periodId: form.periodId, name: form.name }),
     });
 
     setLoading(false);
@@ -38,7 +54,8 @@ export function AddStrategyModal({ open, onClose, divisions, periods, onSuccess 
       return;
     }
 
-    setForm({ divisionId: "", periodId: "", number: "", name: "" });
+    setForm({ periodId: "", name: "" });
+    setNextNumber(null);
     onSuccess();
     onClose();
   }
@@ -47,14 +64,6 @@ export function AddStrategyModal({ open, onClose, divisions, periods, onSuccess 
     <Modal open={open} onClose={onClose} title="Tambah Strategi">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Select
-          label="Divisi"
-          required
-          value={form.divisionId}
-          onChange={(e) => setForm({ ...form, divisionId: e.target.value })}
-          options={divisions.map((d) => ({ value: d.id, label: d.name }))}
-          placeholder="Pilih divisi..."
-        />
-        <Select
           label="Periode"
           required
           value={form.periodId}
@@ -62,15 +71,15 @@ export function AddStrategyModal({ open, onClose, divisions, periods, onSuccess 
           options={periods.map((p) => ({ value: p.id, label: p.name }))}
           placeholder="Pilih periode..."
         />
-        <Input
-          label="Nomor Strategi"
-          type="number"
-          min="1"
-          required
-          value={form.number}
-          onChange={(e) => setForm({ ...form, number: e.target.value })}
-          placeholder="1"
-        />
+        {form.periodId && (
+          <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
+            <span className="font-medium">Nomor Strategi:</span>
+            <span className="font-bold text-gray-900">
+              {nextNumber !== null ? nextNumber : "—"}
+            </span>
+            <span className="ml-auto text-xs text-gray-400">(otomatis)</span>
+          </div>
+        )}
         <Input
           label="Nama Strategi"
           required

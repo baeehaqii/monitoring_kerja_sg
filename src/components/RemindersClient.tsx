@@ -19,9 +19,9 @@ import { formatDate } from "@/lib/utils";
 type SlaAlert = {
   id: string;
   name: string;
+  targetDate: string | null;
   programKerja: {
     name: string;
-    targetDate: string | null;
     strategy: { division: { name: string } };
     raciResponsible: string | null;
   };
@@ -85,14 +85,14 @@ export function RemindersClient({
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
   function buildMessage(alert: SlaAlert, recipientName: string): string {
-    const tgl = alert.programKerja.targetDate
-      ? new Date(alert.programKerja.targetDate).toLocaleDateString("id-ID", {
+    const tgl = alert.targetDate
+      ? new Date(alert.targetDate).toLocaleDateString("id-ID", {
           day: "numeric",
           month: "long",
           year: "numeric",
         })
       : "belum ditentukan";
-    const days = getDaysUntil(alert.programKerja.targetDate, nowDate);
+    const days = getDaysUntil(alert.targetDate, nowDate);
     const status = alert.weeklyProgress[0]?.status ?? "NOT_STARTED";
     const statusLabel: Record<string, string> = {
       NOT_STARTED: "Belum Mulai",
@@ -165,12 +165,12 @@ export function RemindersClient({
 
   const overdue = slaAlerts.filter((a) => {
     if (delayedIds.has(a.id)) return false;
-    const d = getDaysUntil(a.programKerja.targetDate, nowDate);
+    const d = getDaysUntil(a.targetDate, nowDate);
     return d !== null && d <= 0;
   });
   const upcoming = slaAlerts.filter((a) => {
     if (delayedIds.has(a.id)) return false;
-    const d = getDaysUntil(a.programKerja.targetDate, nowDate);
+    const d = getDaysUntil(a.targetDate, nowDate);
     return d !== null && d > 0;
   });
 
@@ -392,7 +392,7 @@ function AlertCard({
   alreadySent: boolean;
   onSend: () => void;
 }) {
-  const days = getDaysUntil(alert.programKerja.targetDate, nowDate);
+  const days = getDaysUntil(alert.targetDate, nowDate);
   const severity = getAlertSeverity(days);
   const status = alert.weeklyProgress[0]?.status ?? "NOT_STARTED";
 
@@ -450,8 +450,8 @@ function AlertCard({
         <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
           <p className="text-xs text-slate-500">
             Target:{" "}
-            {alert.programKerja.targetDate
-              ? new Date(alert.programKerja.targetDate).toLocaleDateString("id-ID", {
+            {alert.targetDate
+              ? new Date(alert.targetDate).toLocaleDateString("id-ID", {
                   day: "numeric",
                   month: "short",
                   year: "numeric",

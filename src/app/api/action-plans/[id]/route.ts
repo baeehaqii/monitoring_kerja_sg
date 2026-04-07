@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withHandler } from "@/lib/api-handler";
+import { canManage } from "@/lib/permissions";
 
 export const PUT = withHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManage(session.user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json();
-  const { name, plannedWeekIds } = body;
+  const { name, targetDate, plannedWeekIds } = body;
 
   await prisma.$transaction(async (tx) => {
-    await tx.actionPlan.update({ where: { id }, data: { name } });
+    await tx.actionPlan.update({
+      where: { id },
+      data: { name, targetDate: targetDate ? new Date(targetDate) : null },
+    });
 
     if (plannedWeekIds !== undefined) {
       await tx.taskTimeline.deleteMany({ where: { actionPlanId: id } });
@@ -39,6 +44,7 @@ export const PUT = withHandler(async (req: NextRequest, { params }: { params: Pr
 export const DELETE = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManage(session.user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   await prisma.actionPlan.delete({ where: { id } });

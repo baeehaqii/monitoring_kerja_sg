@@ -15,13 +15,14 @@ import { EditActionPlanModal } from "./EditActionPlanModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useRouter } from "next/navigation";
 
-type Week = { id: string; label: string; weekNumber: number; periodId: string };
+type Week = { id: string; label: string; weekNumber: number; periodId: string; startDate: string; endDate: string };
 type Period = { id: string; name: string; weeks: Week[] };
 type Division = { id: string; name: string };
 type ActionPlan = {
   id: string;
   number: number;
   name: string;
+  targetDate: string | Date | null;
   taskTimelines: { weekId: string; week: Week }[];
   weeklyProgress: { status: string }[];
 };
@@ -29,7 +30,6 @@ type ProgramKerja = {
   id: string;
   number: number;
   name: string;
-  targetDate: string | Date | null;
   keterangan: string | null;
   raciAccountable: string | null;
   raciResponsible: string | null;
@@ -75,7 +75,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; title: string; description: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(userRole);
+  const isAdmin = ["SUPER_ADMIN", "ADMIN", "GENERAL_MANAGER", "DIREKTUR_BISNIS"].includes(userRole);
 
   const allWeeks = periods.flatMap((p) => p.weeks);
 
@@ -204,6 +204,11 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
         <div className="space-y-3">
           {filtered.map((strategy) => {
             const isExpanded = expandedStrategies.has(strategy.id);
+            const strategySLA = strategy.programKerja
+              .flatMap((pk) => pk.actionPlans)
+              .map((ap) => ap.targetDate ? new Date(ap.targetDate) : null)
+              .filter(Boolean)
+              .sort((a, b) => b!.getTime() - a!.getTime())[0] ?? null;
             return (
               <Card key={strategy.id} padding={false} className="border-l-[5px] border-l-red-600 shadow-md hover:shadow-lg transition-shadow bg-white overflow-hidden">
                 <div
@@ -217,6 +222,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                     <p className="text-sm font-semibold text-slate-900 truncate">{strategy.name}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {strategy.division.name} · {strategy.period.name} · {strategy.programKerja.length} Program Kerja
+                      {strategySLA && <> · <span className="text-slate-500">SLA: {formatDate(strategySLA)}</span></>}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -267,9 +273,15 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-slate-800 truncate">{pk.name}</p>
                                 <div className="flex items-center gap-3 mt-0.5">
-                                  {pk.targetDate && (
-                                    <span className="text-xs text-slate-400">Target: {formatDate(pk.targetDate)}</span>
-                                  )}
+                                  {(() => {
+                                    const latestDate = pk.actionPlans
+                                      .map((ap) => ap.targetDate ? new Date(ap.targetDate) : null)
+                                      .filter(Boolean)
+                                      .sort((a, b) => b!.getTime() - a!.getTime())[0];
+                                    return latestDate ? (
+                                      <span className="text-xs text-slate-400">Due: {formatDate(latestDate)}</span>
+                                    ) : null;
+                                  })()}
                                   {keterangan && (
                                     <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">{keterangan.label}</span>
                                   )}
@@ -340,7 +352,12 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                           <div className="w-6 h-6 rounded bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
                                             <span className="text-xs font-semibold text-slate-500">{ap.number}</span>
                                           </div>
-                                          <span className="flex-1 text-sm font-medium text-slate-700 truncate">{ap.name}</span>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-slate-700 truncate">{ap.name}</p>
+                                            {ap.targetDate && (
+                                              <p className="text-xs text-slate-400">Target: {formatDate(ap.targetDate)}</p>
+                                            )}
+                                          </div>
                                           <TimelineGrid
                                             allWeeks={allWeeks}
                                             plannedWeekIds={plannedWeekIds}
@@ -387,8 +404,8 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
       <AddStrategyModal
         open={addStrategyOpen}
         onClose={() => setAddStrategyOpen(false)}
-        divisions={divisions}
         periods={periods}
+        userDivisionId={userDivisionId}
         onSuccess={() => router.refresh()}
       />
       {addProkerOpen && (

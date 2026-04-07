@@ -1,4 +1,10 @@
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "MEMBER";
+// Roles yang bisa manage konten (CRUD strategi, proker, action plan)
+const MANAGE_ROLES = ["SUPER_ADMIN", "ADMIN", "GENERAL_MANAGER", "DIREKTUR_BISNIS"] as const;
+
+// Roles yang punya akses penuh ke user management & settings
+const SUPER_ADMIN_ROLES = ["SUPER_ADMIN"] as const;
+
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "GENERAL_MANAGER" | "DIREKTUR_BISNIS" | "MEMBER";
 
 export interface SessionUser {
   id: string;
@@ -7,21 +13,21 @@ export interface SessionUser {
 }
 
 export function isSuperAdmin(role: string): boolean {
-  return role === "SUPER_ADMIN";
+  return (SUPER_ADMIN_ROLES as readonly string[]).includes(role);
 }
 
 export function canManage(role: string): boolean {
-  return role === "ADMIN" || role === "SUPER_ADMIN";
+  return (MANAGE_ROLES as readonly string[]).includes(role);
 }
 
 export function divisionStrategyFilter(user: SessionUser): { divisionId?: string } {
-  if (isSuperAdmin(user.role)) return {};
+  if (canManage(user.role)) return {};
   if (!user.divisionId) return { divisionId: "___no_match___" };
   return { divisionId: user.divisionId };
 }
 
 export function nestedDivisionFilter(user: SessionUser) {
-  if (isSuperAdmin(user.role)) return {};
+  if (canManage(user.role)) return {};
   if (!user.divisionId) return { programKerja: { strategy: { divisionId: "___no_match___" } } };
   return {
     programKerja: {

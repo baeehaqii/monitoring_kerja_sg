@@ -110,10 +110,10 @@ async function getDashboardData(
           actionPlan: {
             select: {
               name: true,
+              targetDate: true,
               programKerja: {
                 select: {
                   name: true,
-                  targetDate: true,
                   strategy: {
                     select: {
                       division: { select: { name: true } },
@@ -205,7 +205,7 @@ export default async function DashboardPage(
     ? null
     : await getUserAccessibleProjectIds(session.user.id);
 
-  const [data, divisions, projects] = await Promise.all([
+  const [data, divisions, projects, userProjectsRaw] = await Promise.all([
     getDashboardData(session.user.role, accessibleProjectIds, selectedProjectId, selectedDivId, filterDate),
     superAdmin
       ? prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
@@ -213,16 +213,27 @@ export default async function DashboardPage(
     superAdmin
       ? prisma.project.findMany({
           orderBy: [{ clusterType: "asc" }, { cluster: "asc" }, { name: "asc" }],
-          select: { id: true, name: true, cluster: true },
+          select: { id: true, name: true, cluster: true, clusterType: true },
         })
       : accessibleProjectIds && accessibleProjectIds.length > 0
         ? prisma.project.findMany({
             where: { id: { in: accessibleProjectIds } },
             orderBy: [{ clusterType: "asc" }, { cluster: "asc" }, { name: "asc" }],
-            select: { id: true, name: true, cluster: true },
+            select: { id: true, name: true, cluster: true, clusterType: true },
           })
         : Promise.resolve([]),
+    superAdmin
+      ? Promise.resolve([])
+      : prisma.userProject.findMany({
+          where: { userId: session.user.id },
+          select: { project: { select: { id: true, name: true, cluster: true, clusterType: true } } },
+        }),
   ]);
+
+  // Proyek yang di-assign langsung ke user (untuk chip header)
+  const userProjects = superAdmin
+    ? []
+    : userProjectsRaw.map((up: any) => up.project);
 
   return (
     <DashboardClient
@@ -230,7 +241,8 @@ export default async function DashboardPage(
       divisions={divisions}
       projects={projects}
       userName={session.user.name || "User"}
-      userDivisionName={session.user.divisionName || ""}
+      userRole={session.user.role}
+      userProjects={userProjects}
       isSuperAdmin={superAdmin}
     />
   );

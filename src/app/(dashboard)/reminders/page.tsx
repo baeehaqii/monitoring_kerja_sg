@@ -31,9 +31,7 @@ export default async function RemindersPage() {
         {
           OR: [
             {
-              programKerja: {
-                targetDate: { not: null, lte: threeDaysLater },
-              },
+              targetDate: { not: null, lte: threeDaysLater },
             },
             {
               weeklyProgress: {
@@ -55,7 +53,7 @@ export default async function RemindersPage() {
         take: 1,
       },
     },
-    orderBy: { programKerja: { targetDate: "asc" } },
+    orderBy: { targetDate: "asc" },
   });
 
   const seen = new Set<string>();

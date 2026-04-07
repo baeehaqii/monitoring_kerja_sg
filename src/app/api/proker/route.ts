@@ -2,28 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withHandler } from "@/lib/api-handler";
+import { canManage } from "@/lib/permissions";
 
 export const POST = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManage(session.user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   const {
-    strategyId, number, name,
-    targetDate, keterangan,
+    strategyId, name,
+    keterangan,
     raciAccountable, raciResponsible, raciConsulted, raciInformed,
   } = body;
 
-  if (!strategyId || !number || !name) {
+  if (!strategyId || !name) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  const count = await prisma.programKerja.count({ where: { strategyId } });
+  const number = count + 1;
 
   const pk = await prisma.programKerja.create({
     data: {
       strategyId,
-      number: Number(number),
+      number,
       name,
-      targetDate: targetDate ? new Date(targetDate) : null,
       keterangan: keterangan || null,
       raciAccountable: raciAccountable || null,
       raciResponsible: raciResponsible || null,

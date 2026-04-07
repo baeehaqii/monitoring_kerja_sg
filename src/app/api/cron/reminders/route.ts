@@ -40,7 +40,7 @@ export const GET = withHandler(async (req: NextRequest) => {
         userName: r.user.name,
         taskName: r.actionPlan.name,
         programKerjaName: r.actionPlan.programKerja.name,
-        targetDate: r.actionPlan.programKerja.targetDate,
+        targetDate: r.actionPlan.targetDate,
         status,
       });
 
