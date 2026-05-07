@@ -64,6 +64,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
   const [search, setSearch] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
   const [filterPeriod, setFilterPeriod] = useState("");
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [expandedProkers, setExpandedProkers] = useState<Set<string>>(new Set());
 
@@ -96,6 +97,14 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
     }
     return true;
   });
+
+  function toggleCluster(name: string) {
+    setExpandedClusters((prev) => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  }
 
   function toggleStrategy(id: string) {
     setExpandedStrategies((prev) => {
@@ -195,212 +204,264 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card>
-          <p className="text-center text-slate-400 py-10 text-sm">
-            {search ? "Tidak ada hasil pencarian." : "Belum ada data Program Kerja."}
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((strategy) => {
-            const isExpanded = expandedStrategies.has(strategy.id);
-            const strategySLA = strategy.programKerja
-              .flatMap((pk) => pk.actionPlans)
-              .map((ap) => ap.targetDate ? new Date(ap.targetDate) : null)
-              .filter(Boolean)
-              .sort((a, b) => b!.getTime() - a!.getTime())[0] ?? null;
-            return (
-              <Card key={strategy.id} padding={false} className="border-l-[5px] border-l-red-600 shadow-md hover:shadow-lg transition-shadow bg-white overflow-hidden">
-                <div
-                  className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                  onClick={() => toggleStrategy(strategy.id)}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-red-100/80 flex items-center justify-center flex-shrink-0 ring-1 ring-red-200">
-                    <span className="text-sm font-bold text-red-600">{strategy.number}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{strategy.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {strategy.project?.name ?? strategy.division.name} · {strategy.period.name} · {strategy.programKerja.length} Program Kerja
-                      {strategySLA && <> · <span className="text-slate-500">SLA: {formatDate(strategySLA)}</span></>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isAdmin && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => { e.stopPropagation(); setAddProkerOpen(strategy.id); }}
-                        icon={<Plus className="w-3 h-3" />}
-                      >
-                        Program Kerja
-                      </Button>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteStrategy(strategy); }}
-                        className="text-xs text-red-500 hover:text-red-700 px-2 font-medium transition-colors"
-                      >
-                        Hapus
-                      </button>
-                    )}
-                    {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
-                  </div>
-                </div>
+      {(() => {
+        // Group strategies by cluster (project name or division name)
+        const grouped = new Map<string, Strategy[]>();
+        for (const s of filtered) {
+          const key = s.project?.name ?? s.division.name;
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key)!.push(s);
+        }
 
-                {isExpanded && (
-                  <div className="border-t border-slate-200 bg-slate-50 relative">
-                    <div className="absolute left-[36px] top-0 bottom-0 w-px bg-slate-200 z-0"></div>
+        if (grouped.size === 0) {
+          return (
+            <Card>
+              <p className="text-center text-slate-400 py-10 text-sm">
+                {search ? "Tidak ada hasil pencarian." : "Belum ada data Program Kerja."}
+              </p>
+            </Card>
+          );
+        }
 
-                    {strategy.programKerja.length === 0 ? (
-                      <p className="text-sm text-slate-400 text-center py-5 relative z-10">Belum ada Program Kerja</p>
-                    ) : (
-                      strategy.programKerja.map((pk) => {
-                        const pkExpanded = expandedProkers.has(pk.id);
-                        const keterangan = KETERANGAN_OPTIONS.find((k) => k.value === pk.keterangan);
+        return (
+          <div className="space-y-4">
+            {Array.from(grouped.entries()).map(([clusterName, clusterStrategies]) => {
+              const isClusterExpanded = expandedClusters.has(clusterName);
+              const totalPK = clusterStrategies.reduce((sum, s) => sum + s.programKerja.length, 0);
+              const totalAP = clusterStrategies.reduce(
+                (sum, s) => sum + s.programKerja.reduce((s2, pk) => s2 + pk.actionPlans.length, 0), 0
+              );
+
+              return (
+                <div key={clusterName} className="rounded-xl border border-slate-200 overflow-hidden shadow-md">
+                  {/* Cluster header */}
+                  <div
+                    className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-slate-800 to-slate-700 cursor-pointer hover:from-slate-700 hover:to-slate-600 transition-colors"
+                    onClick={() => toggleCluster(clusterName)}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
+                      <span className="text-xs font-bold text-white">{clusterStrategies.length}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white">{clusterName}</p>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        {clusterStrategies.length} Strategi · {totalPK} Program Kerja · {totalAP} Action Plan
+                      </p>
+                    </div>
+                    {isClusterExpanded
+                      ? <ChevronDown className="w-5 h-5 text-white/70 flex-shrink-0" />
+                      : <ChevronRight className="w-5 h-5 text-white/70 flex-shrink-0" />
+                    }
+                  </div>
+
+                  {/* Strategies within cluster */}
+                  {isClusterExpanded && (
+                    <div className="divide-y divide-slate-100 bg-white">
+                      {clusterStrategies.map((strategy, idx) => {
+                        const isExpanded = expandedStrategies.has(strategy.id);
+                        const strategySLA = strategy.programKerja
+                          .flatMap((pk) => pk.actionPlans)
+                          .map((ap) => ap.targetDate ? new Date(ap.targetDate) : null)
+                          .filter(Boolean)
+                          .sort((a, b) => b!.getTime() - a!.getTime())[0] ?? null;
+
                         return (
-                          <div key={pk.id} className="border-b border-slate-200 last:border-0 relative z-10 hover:bg-slate-100/50 transition-colors">
+                          <div key={strategy.id} className="border-l-4 border-l-red-500 bg-white hover:bg-slate-50/50 transition-colors">
                             <div
-                              className="flex items-center gap-3 pr-5 pl-12 py-3.5 cursor-pointer transition-colors relative"
-                              onClick={() => toggleProker(pk.id)}
+                              className="flex items-center gap-4 px-5 py-4 cursor-pointer"
+                              onClick={() => toggleStrategy(strategy.id)}
                             >
-                              <div className="relative">
-                                <div className="absolute right-full top-1/2 w-[12px] h-px bg-slate-300 -translate-y-1/2"></div>
-                                <div className="w-7 h-7 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center flex-shrink-0 z-10 relative">
-                                  <span className="text-xs font-bold text-slate-700">{pk.number}</span>
-                                </div>
+                              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0 ring-1 ring-red-200">
+                                <span className="text-sm font-bold text-red-600">{idx + 1}</span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-800 truncate">{pk.name}</p>
-                                <div className="flex items-center gap-3 mt-0.5">
-                                  {(() => {
-                                    const latestDate = pk.actionPlans
-                                      .map((ap) => ap.targetDate ? new Date(ap.targetDate) : null)
-                                      .filter(Boolean)
-                                      .sort((a, b) => b!.getTime() - a!.getTime())[0];
-                                    return latestDate ? (
-                                      <span className="text-xs text-slate-400">Due: {formatDate(latestDate)}</span>
-                                    ) : null;
-                                  })()}
-                                  {keterangan && (
-                                    <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">{keterangan.label}</span>
-                                  )}
-                                </div>
+                                <p className="text-sm font-semibold text-slate-900 truncate">{strategy.name}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  {strategy.division.name} · {strategy.period.name} · {strategy.programKerja.length} Program Kerja
+                                  {strategySLA && <> · <span className="text-slate-500">SLA: {formatDate(strategySLA)}</span></>}
+                                </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs text-slate-400">{pk.actionPlans.length} tasks</span>
                                 {isAdmin && (
                                   <Button
                                     size="sm"
-                                    variant="ghost"
-                                    onClick={(e) => { e.stopPropagation(); setAddAPOpen({ proker: pk, strategy }); }}
+                                    variant="outline"
+                                    onClick={(e) => { e.stopPropagation(); setAddProkerOpen(strategy.id); }}
                                     icon={<Plus className="w-3 h-3" />}
-                                  />
+                                  >
+                                    Program Kerja
+                                  </Button>
                                 )}
                                 {isAdmin && (
-                                  <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setEditProkerOpen(pk); }}
-                                      className="text-slate-400 hover:text-[#0f52ba] p-1 transition-colors"
-                                      title="Edit Program Kerja"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); deleteProker(pk); }}
-                                      className="text-xs text-red-400 hover:text-red-600 px-1 font-medium transition-colors"
-                                    >
-                                      Hapus
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); deleteStrategy(strategy); }}
+                                    className="text-xs text-red-500 hover:text-red-700 px-2 font-medium transition-colors"
+                                  >
+                                    Hapus
+                                  </button>
                                 )}
-                                {pkExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                               </div>
                             </div>
 
-                            {pkExpanded && (
-                              <div className="relative pr-5 pb-4 pl-[88px] bg-slate-100/80 border-t border-slate-200/60 pt-3 shadow-inner">
-                                <div className="absolute left-[62px] top-0 bottom-6 w-px bg-slate-300 z-0"></div>
+                            {isExpanded && (
+                              <div className="border-t border-slate-200 bg-slate-50 relative">
+                                <div className="absolute left-[36px] top-0 bottom-0 w-px bg-slate-200 z-0"></div>
 
-                                {(pk.raciAccountable || pk.raciResponsible) && (
-                                  <div className="flex flex-wrap gap-4 py-2 mb-2 border-b border-slate-100 text-xs">
-                                    {pk.raciResponsible && (
-                                      <span><span className="font-semibold text-slate-600">R:</span> <span className="text-slate-500">{pk.raciResponsible}</span></span>
-                                    )}
-                                    {pk.raciAccountable && (
-                                      <span><span className="font-semibold text-slate-600">A:</span> <span className="text-slate-500">{pk.raciAccountable}</span></span>
-                                    )}
-                                    {pk.raciConsulted && (
-                                      <span><span className="font-semibold text-slate-600">C:</span> <span className="text-slate-500">{pk.raciConsulted}</span></span>
-                                    )}
-                                    {pk.raciInformed && (
-                                      <span><span className="font-semibold text-slate-600">I:</span> <span className="text-slate-500">{pk.raciInformed}</span></span>
-                                    )}
-                                  </div>
-                                )}
-
-                                {pk.actionPlans.length === 0 ? (
-                                  <p className="text-xs text-slate-400 py-3">Belum ada Action Plan</p>
+                                {strategy.programKerja.length === 0 ? (
+                                  <p className="text-sm text-slate-400 text-center py-5 relative z-10">Belum ada Program Kerja</p>
                                 ) : (
-                                  <div className="space-y-2 py-1">
-                                    {pk.actionPlans.map((ap) => {
-                                      const status = ap.weeklyProgress?.[0]?.status ?? "NOT_STARTED";
-                                      const plannedWeekIds = ap.taskTimelines.map((t) => t.weekId);
-                                      return (
-                                        <div key={ap.id} className="relative z-10 flex items-center gap-3 py-2 px-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-colors group">
-                                          <div className="absolute right-full top-1/2 w-[26px] h-px bg-slate-300 -translate-y-1/2"></div>
-                                          <div className="w-6 h-6 rounded bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-xs font-semibold text-slate-500">{ap.number}</span>
+                                  strategy.programKerja.map((pk) => {
+                                    const pkExpanded = expandedProkers.has(pk.id);
+                                    const keterangan = KETERANGAN_OPTIONS.find((k) => k.value === pk.keterangan);
+                                    return (
+                                      <div key={pk.id} className="border-b border-slate-200 last:border-0 relative z-10 hover:bg-slate-100/50 transition-colors">
+                                        <div
+                                          className="flex items-center gap-3 pr-5 pl-12 py-3.5 cursor-pointer transition-colors relative"
+                                          onClick={() => toggleProker(pk.id)}
+                                        >
+                                          <div className="relative">
+                                            <div className="absolute right-full top-1/2 w-[12px] h-px bg-slate-300 -translate-y-1/2"></div>
+                                            <div className="w-7 h-7 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center flex-shrink-0 z-10 relative">
+                                              <span className="text-xs font-bold text-slate-700">{pk.number}</span>
+                                            </div>
                                           </div>
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-slate-700 truncate">{ap.name}</p>
-                                            {ap.targetDate && (
-                                              <p className="text-xs text-slate-400">Target: {formatDate(ap.targetDate)}</p>
+                                            <p className="text-sm font-medium text-slate-800 truncate">{pk.name}</p>
+                                            <div className="flex items-center gap-3 mt-0.5">
+                                              {(() => {
+                                                const latestDate = pk.actionPlans
+                                                  .map((ap) => ap.targetDate ? new Date(ap.targetDate) : null)
+                                                  .filter(Boolean)
+                                                  .sort((a, b) => b!.getTime() - a!.getTime())[0];
+                                                return latestDate ? (
+                                                  <span className="text-xs text-slate-400">Due: {formatDate(latestDate)}</span>
+                                                ) : null;
+                                              })()}
+                                              {keterangan && (
+                                                <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">{keterangan.label}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-400">{pk.actionPlans.length} tasks</span>
+                                            {isAdmin && (
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={(e) => { e.stopPropagation(); setAddAPOpen({ proker: pk, strategy }); }}
+                                                icon={<Plus className="w-3 h-3" />}
+                                              />
+                                            )}
+                                            {isAdmin && (
+                                              <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); setEditProkerOpen(pk); }}
+                                                  className="text-slate-400 hover:text-[#0f52ba] p-1 transition-colors"
+                                                  title="Edit Program Kerja"
+                                                >
+                                                  <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); deleteProker(pk); }}
+                                                  className="text-xs text-red-400 hover:text-red-600 px-1 font-medium transition-colors"
+                                                >
+                                                  Hapus
+                                                </button>
+                                              </div>
+                                            )}
+                                            {pkExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                          </div>
+                                        </div>
+
+                                        {pkExpanded && (
+                                          <div className="relative pr-5 pb-4 pl-[88px] bg-slate-100/80 border-t border-slate-200/60 pt-3 shadow-inner">
+                                            <div className="absolute left-[62px] top-0 bottom-6 w-px bg-slate-300 z-0"></div>
+
+                                            {(pk.raciAccountable || pk.raciResponsible) && (
+                                              <div className="flex flex-wrap gap-4 py-2 mb-2 border-b border-slate-100 text-xs">
+                                                {pk.raciResponsible && (
+                                                  <span><span className="font-semibold text-slate-600">R:</span> <span className="text-slate-500">{pk.raciResponsible}</span></span>
+                                                )}
+                                                {pk.raciAccountable && (
+                                                  <span><span className="font-semibold text-slate-600">A:</span> <span className="text-slate-500">{pk.raciAccountable}</span></span>
+                                                )}
+                                                {pk.raciConsulted && (
+                                                  <span><span className="font-semibold text-slate-600">C:</span> <span className="text-slate-500">{pk.raciConsulted}</span></span>
+                                                )}
+                                                {pk.raciInformed && (
+                                                  <span><span className="font-semibold text-slate-600">I:</span> <span className="text-slate-500">{pk.raciInformed}</span></span>
+                                                )}
+                                              </div>
+                                            )}
+
+                                            {pk.actionPlans.length === 0 ? (
+                                              <p className="text-xs text-slate-400 py-3">Belum ada Action Plan</p>
+                                            ) : (
+                                              <div className="space-y-2 py-1">
+                                                {pk.actionPlans.map((ap) => {
+                                                  const status = ap.weeklyProgress?.[0]?.status ?? "NOT_STARTED";
+                                                  const plannedWeekIds = ap.taskTimelines.map((t) => t.weekId);
+                                                  return (
+                                                    <div key={ap.id} className="relative z-10 flex items-center gap-3 py-2 px-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-colors group">
+                                                      <div className="absolute right-full top-1/2 w-[26px] h-px bg-slate-300 -translate-y-1/2"></div>
+                                                      <div className="w-6 h-6 rounded bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-xs font-semibold text-slate-500">{ap.number}</span>
+                                                      </div>
+                                                      <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-slate-700 truncate">{ap.name}</p>
+                                                        {ap.targetDate && (
+                                                          <p className="text-xs text-slate-400">Target: {formatDate(ap.targetDate)}</p>
+                                                        )}
+                                                      </div>
+                                                      <TimelineGrid
+                                                        allWeeks={allWeeks}
+                                                        plannedWeekIds={plannedWeekIds}
+                                                        periodId={strategy.period.id}
+                                                      />
+                                                      <StatusBadge status={status} />
+                                                      {isAdmin && (
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pl-2 border-l border-slate-200">
+                                                          <button
+                                                            onClick={() => setEditAPOpen({ actionPlan: ap, strategy })}
+                                                            className="text-slate-400 hover:text-[#0f52ba] p-1 transition-colors"
+                                                            title="Edit Action Plan"
+                                                          >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                          </button>
+                                                          <button
+                                                            onClick={() => deleteActionPlan(ap)}
+                                                            className="text-slate-400 hover:text-red-600 p-1 font-bold text-sm transition-colors"
+                                                            title="Hapus Action Plan"
+                                                          >
+                                                            ×
+                                                          </button>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
                                             )}
                                           </div>
-                                          <TimelineGrid
-                                            allWeeks={allWeeks}
-                                            plannedWeekIds={plannedWeekIds}
-                                            periodId={strategy.period.id}
-                                          />
-                                          <StatusBadge status={status} />
-                                          {isAdmin && (
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pl-2 border-l border-slate-200">
-                                              <button
-                                                onClick={() => setEditAPOpen({ actionPlan: ap, strategy })}
-                                                className="text-slate-400 hover:text-[#0f52ba] p-1 transition-colors"
-                                                title="Edit Action Plan"
-                                              >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                onClick={() => deleteActionPlan(ap)}
-                                                className="text-slate-400 hover:text-red-600 p-1 font-bold text-sm transition-colors"
-                                                title="Hapus Action Plan"
-                                              >
-                                                ×
-                                              </button>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
                                 )}
                               </div>
                             )}
                           </div>
                         );
-                      })
-                    )}
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <AddStrategyModal
         open={addStrategyOpen}
