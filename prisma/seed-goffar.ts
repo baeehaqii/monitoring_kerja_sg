@@ -481,7 +481,12 @@ async function main() {
   if (!goffar) {
     throw new Error("User abdulgoffar@siproper.com tidak ditemukan! Jalankan seed utama terlebih dahulu.");
   }
-  console.log(`  ✓ User ditemukan: ${goffar.name} (${goffar.email})`);
+  // Pastikan divisionId cocok dengan divisi Bisnis Graha
+  await prisma.user.update({
+    where: { email: "abdulgoffar@siproper.com" },
+    data: { divisionId: division.id },
+  });
+  console.log(`  ✓ User ditemukan & divisionId diupdate: ${goffar.name} (${goffar.email})`);
 
   // 3. Period April 2026
   console.log("\n── Period");
