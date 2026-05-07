@@ -79,29 +79,27 @@ jobs:
               done
             fi
 
+            # Matikan proses lama — coba via PM2 dulu, lalu force kill port
             if [ -n "$PM2_BIN" ]; then
               echo "==> Using PM2 at: $PM2_BIN"
-
-              # Stop dulu via PM2 agar autorestart tidak langsung rebut port
               sudo -u www $PM2_BIN stop monitoring_kerja_sg 2>/dev/null || true
-              sleep 1
+              sudo -u www $PM2_BIN delete monitoring_kerja_sg 2>/dev/null || true
+            fi
+            sudo fuser -k 3003/tcp 2>/dev/null || true
+            sudo pkill -f "next-server" 2>/dev/null || true
+            sleep 3
 
-              # Bersihkan sisa proses lama di port 3003
-              sudo fuser -k 3003/tcp 2>/dev/null || true
-              sudo pkill -f "next-server" 2>/dev/null || true
-              sleep 2
-
-              # startOrReload: start jika belum ada, reload jika sudah ada — tidak pernah gagal karena "already exists"
-              sudo -u www $PM2_BIN startOrReload $PROJECT_DIR/ecosystem.config.js --update-env
-
-              # Simpan list PM2 agar survive setelah reboot
+            # Start via PM2 jika tersedia (aaPanel mechanism), fallback ke nohup
+            STARTED=false
+            if [ -n "$PM2_BIN" ]; then
+              sudo -u www $PM2_BIN start $PROJECT_DIR/ecosystem.config.js 2>/dev/null \
+                && STARTED=true \
+                || echo "⚠️  PM2 start gagal, coba nohup..."
               sudo -u www $PM2_BIN save --force 2>/dev/null || true
+            fi
 
-            else
-              echo "⚠️  PM2 tidak ditemukan, fallback ke nohup..."
-              sudo fuser -k 3003/tcp 2>/dev/null || true
-              sudo pkill -f "next-server" 2>/dev/null || true
-              sleep 2
+            if [ "$STARTED" = false ]; then
+              echo "==> Starting via nohup..."
               sudo -u www bash -c "cd $PROJECT_DIR && nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &"
             fi
 

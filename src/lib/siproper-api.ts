@@ -1,51 +1,54 @@
-/**
- * Utility untuk fetch data dari API Siproper (dev2.siproper.cloud).
- * Menggunakan auth mobile endpoint yang sama dengan login flow.
- */
-
 let cachedToken: string | null = null;
 let tokenExpiry = 0;
+
+const AUTH_URL =
+  process.env.SIPROPER_AUTH_URL ??
+  "https://dev2.siproper.cloud/api/auth/login";
 
 async function getSiproperToken(): Promise<string | null> {
   if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
 
-  const authUrl = process.env.SIPROPER_AUTH_URL;
   const email = process.env.SIPROPER_API_EMAIL;
   const password = process.env.SIPROPER_API_PASSWORD;
 
-  if (!authUrl || !email || !password) {
+  if (!email || !password) {
     console.warn("[siproper-api] SIPROPER_API_EMAIL / SIPROPER_API_PASSWORD belum dikonfigurasi");
     return null;
   }
 
   try {
-    const res = await fetch(authUrl, {
+    const res = await fetch(AUTH_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
       cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
     });
-    const json = await res.json();
-    if (!res.ok || json?.status !== "success") {
-      console.error("[siproper-api] Auth gagal:", json?.message);
+
+    let json: Record<string, unknown> = {};
+    try { json = await res.json(); } catch { /* empty body */ }
+
+    if (!res.ok) {
+      console.error("[siproper-api] Auth gagal:", res.status, json?.message ?? json?.error);
       return null;
     }
-    // Handle berbagai field token yang mungkin dikembalikan
+
+    // Web auth: { status, data: { token } } atau { token } atau { access_token }
     const token =
-      json.data?.token ??
-      json.data?.access_token ??
+      (json.data as Record<string, unknown>)?.token ??
+      (json.data as Record<string, unknown>)?.access_token ??
       json.token ??
       json.access_token ??
       null;
 
     if (!token) {
-      console.error("[siproper-api] Token tidak ditemukan dalam respons auth");
+      console.error("[siproper-api] Token tidak ditemukan. Response:", JSON.stringify(json));
       return null;
     }
 
-    cachedToken = token;
-    tokenExpiry = Date.now() + 50 * 60 * 1000; // cache 50 menit
-    return token;
+    cachedToken = token as string;
+    tokenExpiry = Date.now() + 50 * 60 * 1000;
+    return cachedToken;
   } catch (err) {
     console.error("[siproper-api] Error saat auth:", err);
     return null;
