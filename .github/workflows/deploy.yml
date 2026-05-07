@@ -61,23 +61,23 @@ jobs:
             echo "==> Building Next.js app..."
             npm run build
 
-            echo "==> Restarting app via PM2 (www user)..."
+            echo "==> Restarting app..."
 
-            # Fix ownership back to www so PM2 can read the files
+            # Fix ownership ke www agar app bisa baca file build
             sudo chown -R www:www $PROJECT_DIR
 
-            # Reload/restart via PM2 (zero-downtime if possible)
-            if sudo -u www pm2 describe monitoring_kerja_sg > /dev/null 2>&1; then
-              sudo -u www pm2 reload monitoring_kerja_sg --update-env 2>&1
-              echo "✅ PM2 reload selesai"
-            else
-              # First deploy: register ke PM2
-              sudo -u www bash -c "cd $PROJECT_DIR && pm2 start npm --name monitoring_kerja_sg -- start"
-              sudo -u www pm2 save
-              echo "✅ PM2 start selesai (pertama kali)"
-            fi
+            # Kill proses lama di port 3003
+            sudo fuser -k 3003/tcp 2>/dev/null || true
+            sudo pkill -f "next-server" 2>/dev/null || true
+            sleep 3
 
-            sleep 5
-            ss -tlnp | grep -q ':3003' && echo "✅ App listening on port 3003" || echo "❌ App belum running, cek: sudo -u www pm2 logs monitoring_kerja_sg"
+            # Start langsung sebagai www (sama seperti portalsiproper)
+            mkdir -p $PROJECT_DIR/logs
+            sudo -u www bash -c "cd $PROJECT_DIR && nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &"
+            sleep 8
+
+            ss -tlnp | grep -q ':3003' \
+              && echo "✅ App listening on port 3003" \
+              || echo "❌ App gagal start — cek log: $PROJECT_DIR/logs/app.log"
 
             echo "==> Deploy complete!"
