@@ -4,55 +4,18 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { FolderKanban, AlertTriangle } from "lucide-react";
 
-type Proyek = Record<string, unknown>;
+type Proyek = {
+  id: number;
+  nama_proyek: string;
+  unit_bisnis: { unit_bisnis: string } | null;
+  lgl_area: { area: string | null } | null;
+  alamat_proyek: string | null;
+  singkatan_pt: string | null;
+  pt_proyek: string | null;
+};
 
-type Col = { label: string; fields: string[] };
-
-const COLUMNS: Col[] = [
-  { label: "ID",          fields: ["id"] },
-  { label: "Nama Proyek", fields: ["nama_proyek", "nama", "name"] },
-  { label: "Unit Bisnis", fields: ["unit_bisnis", "unitBisnis", "unit_bisnis_nama"] },
-  { label: "Area",        fields: ["area", "nama_area"] },
-  { label: "Alamat",      fields: ["alamat", "address"] },
-  { label: "PT",          fields: ["pt", "perusahaan", "nama_pt", "lgl_data_pt", "lglDataPt"] },
-];
-
-function pick(row: Proyek, fields: string[]): string {
-  for (const f of fields) {
-    const v = row[f];
-    if (v !== null && v !== undefined) return resolveValue(v);
-  }
-  return "—";
-}
-
-function resolveValue(v: unknown): string {
-  if (v === null || v === undefined) return "—";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "—";
-    // Array of objects → ambil nama dari tiap item
-    return v
-      .map((item) => {
-        if (typeof item === "object" && item !== null) {
-          const o = item as Record<string, unknown>;
-          return String(o.nama ?? o.name ?? o.nama_pt ?? o.singkatan ?? o.kode ?? "");
-        }
-        return String(item);
-      })
-      .filter(Boolean)
-      .join(", ") || "—";
-  }
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    const name =
-      o.nama_unit_bisnis ??
-      o.nama_area ??
-      o.nama_proyek ??
-      o.nama_pt ??
-      o.singkatan ??
-      o.nama ??
-      o.name;
-    return name ? String(name) : "—";
-  }
+function str(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
   return String(v);
 }
 
@@ -110,22 +73,24 @@ export default async function ProyekPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide w-10">#</th>
-                  {COLUMNS.map((c) => (
-                    <th key={c.label} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-                      {c.label}
-                    </th>
-                  ))}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide min-w-[180px]">Nama Proyek</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit Bisnis</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Area</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide min-w-[200px]">Alamat</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">PT</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {data.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-xs">{i + 1}</td>
-                    {COLUMNS.map((c) => (
-                      <td key={c.label} className="px-4 py-3 text-slate-700 max-w-[240px] truncate">
-                        {pick(row, c.fields)}
-                      </td>
-                    ))}
+                    <td className="px-4 py-3 text-slate-500">{row.id}</td>
+                    <td className="px-4 py-3 text-slate-700 font-medium">{str(row.nama_proyek)}</td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{str(row.unit_bisnis?.unit_bisnis)}</td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{str(row.lgl_area?.area)}</td>
+                    <td className="px-4 py-3 text-slate-600 max-w-[240px] truncate">{str(row.alamat_proyek)}</td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{str(row.singkatan_pt ?? row.pt_proyek)}</td>
                   </tr>
                 ))}
               </tbody>

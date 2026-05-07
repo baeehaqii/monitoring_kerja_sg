@@ -4,36 +4,14 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { MapPin } from "lucide-react";
 
-type Area = Record<string, unknown>;
+type Area = {
+  id: number;
+  nama_area: string;
+  unit_bisnis: { id: number; unit_bisnis: string } | null;
+};
 
-type Col = { label: string; fields: string[] };
-
-const COLUMNS: Col[] = [
-  { label: "ID",           fields: ["id"] },
-  { label: "Nama Area",    fields: ["nama_area", "nama", "name"] },
-  { label: "Unit Bisnis",  fields: ["unit_bisnis", "unitBisnis", "unit_bisnis_nama", "nama_unit_bisnis"] },
-];
-
-function pick(row: Area, fields: string[]): string {
-  for (const f of fields) {
-    const v = row[f];
-    if (v !== null && v !== undefined) return resolveValue(v);
-  }
-  return "—";
-}
-
-function resolveValue(v: unknown): string {
-  if (v === null || v === undefined) return "—";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "—";
-    return v.map(resolveValue).join(", ");
-  }
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    const name =
-      o.nama_unit_bisnis ?? o.nama_area ?? o.nama ?? o.name;
-    return name ? String(name) : "—";
-  }
+function str(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
   return String(v);
 }
 
@@ -75,22 +53,18 @@ export default async function AreasPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide w-10">#</th>
-                  {COLUMNS.map((c) => (
-                    <th key={c.label} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-                      {c.label}
-                    </th>
-                  ))}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Nama Area</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit Bisnis</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {data.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-xs">{i + 1}</td>
-                    {COLUMNS.map((c) => (
-                      <td key={c.label} className="px-4 py-3 text-slate-700 max-w-[280px] truncate">
-                        {pick(row, c.fields)}
-                      </td>
-                    ))}
+                    <td className="px-4 py-3 text-slate-500">{row.id}</td>
+                    <td className="px-4 py-3 text-slate-700 font-medium">{str(row.nama_area)}</td>
+                    <td className="px-4 py-3 text-slate-600">{str(row.unit_bisnis?.unit_bisnis)}</td>
                   </tr>
                 ))}
               </tbody>
