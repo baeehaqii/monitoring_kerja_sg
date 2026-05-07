@@ -14,6 +14,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check SSH connectivity
+        run: |
+          echo "Runner public IP: $(curl -s https://api.ipify.org)"
+          nc -zv -w 10 ${{ secrets.PROD_SSH_HOST }} ${{ secrets.PROD_SSH_PORT }} 2>&1 \
+            && echo "✅ Port ${{ secrets.PROD_SSH_PORT }} OPEN" \
+            || echo "❌ Port ${{ secrets.PROD_SSH_PORT }} REFUSED/CLOSED – cek aaPanel Security"
+
       - name: Deploy to Server Kantor (task.siproper.com)
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -22,7 +29,9 @@ jobs:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          port: ${{ secrets.PROD_SSH_PORT }}
+          timeout: 60s
+          command_timeout: 30m
           envs: GH_TOKEN
           script: |
             set -e
