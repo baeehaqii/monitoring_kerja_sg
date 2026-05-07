@@ -34,7 +34,6 @@ jobs:
           command_timeout: 30m
           envs: GH_TOKEN
           script: |
-            # --- BUILD PHASE: strict mode agar gagal build = gagal deploy ---
             set -e
 
             PROJECT_DIR="/www/wwwroot/monitoring_kerja_sg"
@@ -62,37 +61,50 @@ jobs:
             echo "==> Building Next.js app..."
             npm run build
 
-            # --- RESTART PHASE: non-strict, proses management tidak boleh gagalkan deploy ---
-            set +e
+            echo "==> Preparing restart script..."
+            sudo chown -R www:www $PROJECT_DIR
+            sudo -u www mkdir -p $PROJECT_DIR/logs
+
+            # Tulis restart script ke disk — selalu exit 0, tidak ada yang bisa fail deploy
+            sudo tee /tmp/do_restart.sh > /dev/null << 'RESTART'
+            #!/bin/bash
+            PROJECT="/www/wwwroot/monitoring_kerja_sg"
+
+            # 1. Stop PM2 managed instance dulu agar tidak autorestart setelah port dikill
+            /usr/bin/pm2 stop monitoring_kerja_sg 2>/dev/null || true
+
+            # 2. Tunggu sebentar sebelum force kill
+            sleep 1
+
+            # 3. Force kill semua proses di port 3003
+            /sbin/fuser -k 3003/tcp 2>/dev/null || true
+            /usr/bin/pkill -f "next-server" 2>/dev/null || true
+            /usr/bin/pkill -f "next start" 2>/dev/null || true
+            sleep 3
+
+            # 4. Start via nohup sebagai www (mekanisme yang sama dengan aaPanel)
+            cd "$PROJECT"
+            nohup npm start >> "$PROJECT/logs/app.log" 2>&1 &
+            APP_PID=$!
+            echo "$APP_PID" > "$PROJECT/logs/app.pid"
+            echo "App started, PID: $APP_PID"
+
+            exit 0
+            RESTART
+
+            sudo chmod +x /tmp/do_restart.sh
 
             echo "==> Restarting app..."
-
-            sudo chown -R www:www $PROJECT_DIR
-            mkdir -p $PROJECT_DIR/logs
-
-            # Kill semua proses lama di port 3003 (termasuk PM2 managed, nohup, dll)
-            sudo fuser -k 3003/tcp 2>/dev/null
-            sudo pkill -f "next-server" 2>/dev/null
-            sudo pkill -f "next start" 2>/dev/null
-            sleep 4
-
-            # Start sebagai www — sama seperti aaPanel Node Project start mechanism
-            sudo -u www bash -c "
-              cd $PROJECT_DIR
-              nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &
-              echo \$! > $PROJECT_DIR/logs/app.pid
-              echo 'Started PID: '\$!
-            "
+            sudo -u www bash /tmp/do_restart.sh
 
             sleep 8
 
-            # Verifikasi
             if ss -tlnp | grep -q ':3003'; then
-              PID=$(cat $PROJECT_DIR/logs/app.pid 2>/dev/null || echo '?')
+              PID=$(cat $PROJECT_DIR/logs/app.pid 2>/dev/null || echo "?")
               echo "✅ App listening on port 3003 (PID: $PID)"
             else
-              echo "❌ App gagal start — tail log:"
-              tail -20 $PROJECT_DIR/logs/app.log 2>/dev/null || true
+              echo "❌ App gagal start — last 20 lines log:"
+              sudo -u www tail -20 $PROJECT_DIR/logs/app.log 2>/dev/null || true
             fi
 
             echo "==> Deploy complete!"
