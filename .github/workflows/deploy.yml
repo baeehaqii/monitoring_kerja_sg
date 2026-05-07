@@ -34,6 +34,7 @@ jobs:
           command_timeout: 30m
           envs: GH_TOKEN
           script: |
+            # --- BUILD PHASE: strict mode agar gagal build = gagal deploy ---
             set -e
 
             PROJECT_DIR="/www/wwwroot/monitoring_kerja_sg"
@@ -61,52 +62,37 @@ jobs:
             echo "==> Building Next.js app..."
             npm run build
 
+            # --- RESTART PHASE: non-strict, proses management tidak boleh gagalkan deploy ---
+            set +e
+
             echo "==> Restarting app..."
 
-            # Fix ownership ke www agar app bisa baca file build
             sudo chown -R www:www $PROJECT_DIR
             mkdir -p $PROJECT_DIR/logs
 
-            # Cari PM2 binary (aaPanel Node Project menggunakan PM2 internaly)
-            PM2_BIN=$(sudo -u www which pm2 2>/dev/null || true)
-            if [ -z "$PM2_BIN" ]; then
-              for candidate in \
-                "/www/server/nodejs/v24.11.0/bin/pm2" \
-                "/www/server/nvm/versions/node/v24.11.0/bin/pm2" \
-                "/usr/local/bin/pm2" \
-                "/usr/bin/pm2"; do
-                [ -x "$candidate" ] && PM2_BIN="$candidate" && break
-              done
-            fi
+            # Kill semua proses lama di port 3003 (termasuk PM2 managed, nohup, dll)
+            sudo fuser -k 3003/tcp 2>/dev/null
+            sudo pkill -f "next-server" 2>/dev/null
+            sudo pkill -f "next start" 2>/dev/null
+            sleep 4
 
-            # Matikan proses lama — coba via PM2 dulu, lalu force kill port
-            if [ -n "$PM2_BIN" ]; then
-              echo "==> Using PM2 at: $PM2_BIN"
-              sudo -u www $PM2_BIN stop monitoring_kerja_sg 2>/dev/null || true
-              sudo -u www $PM2_BIN delete monitoring_kerja_sg 2>/dev/null || true
-            fi
-            sudo fuser -k 3003/tcp 2>/dev/null || true
-            sudo pkill -f "next-server" 2>/dev/null || true
-            sleep 3
-
-            # Start via PM2 jika tersedia (aaPanel mechanism), fallback ke nohup
-            STARTED=false
-            if [ -n "$PM2_BIN" ]; then
-              sudo -u www $PM2_BIN start $PROJECT_DIR/ecosystem.config.js 2>/dev/null \
-                && STARTED=true \
-                || echo "⚠️  PM2 start gagal, coba nohup..."
-              sudo -u www $PM2_BIN save --force 2>/dev/null || true
-            fi
-
-            if [ "$STARTED" = false ]; then
-              echo "==> Starting via nohup..."
-              sudo -u www bash -c "cd $PROJECT_DIR && nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &"
-            fi
+            # Start sebagai www — sama seperti aaPanel Node Project start mechanism
+            sudo -u www bash -c "
+              cd $PROJECT_DIR
+              nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &
+              echo \$! > $PROJECT_DIR/logs/app.pid
+              echo 'Started PID: '\$!
+            "
 
             sleep 8
 
-            ss -tlnp | grep -q ':3003' \
-              && echo "✅ App listening on port 3003" \
-              || echo "❌ App gagal start — cek logs: $PROJECT_DIR/logs/"
+            # Verifikasi
+            if ss -tlnp | grep -q ':3003'; then
+              PID=$(cat $PROJECT_DIR/logs/app.pid 2>/dev/null || echo '?')
+              echo "✅ App listening on port 3003 (PID: $PID)"
+            else
+              echo "❌ App gagal start — tail log:"
+              tail -20 $PROJECT_DIR/logs/app.log 2>/dev/null || true
+            fi
 
             echo "==> Deploy complete!"
