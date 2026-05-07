@@ -60,10 +60,16 @@ type UserItem = {
   id: string; name: string; email: string; role: string;
   divisionId: string | null; whatsappNumber: string | null; createdAt: string;
   division: { name: string } | null;
-  userProjects: { projectId: string; project: { id: string; name: string; cluster: string } }[];
+  userProjects: {
+    projectId: string;
+    project: { id: string; name: string; cluster: string; unitBisnis?: string | null };
+  }[];
 };
 type Division = { id: string; name: string };
-type Project = { id: string; name: string; cluster: string; clusterType: string };
+type Project = {
+  id: string; name: string; cluster: string;
+  clusterType: string; unitBisnis?: string | null; siproperProyekId?: number | null;
+};
 
 interface Props {
   users: UserItem[];
@@ -88,11 +94,16 @@ const ROLE_BADGE: Record<string, { label: string; variant: "default" | "info" | 
   SUPER_ADMIN: { label: "Super Admin", variant: "danger" },
 };
 
-const CLUSTER_COLOR: Record<string, string> = {
-  GRAHA: "bg-blue-50 text-blue-600",
-  GRIYA: "bg-green-50 text-green-600",
-  SGM: "bg-purple-50 text-purple-600",
+const UNIT_BISNIS_COLOR: Record<string, string> = {
+  "Sapphire Graha":       "bg-blue-50 text-blue-700",
+  "Sapphire Griya":       "bg-green-50 text-green-700",
+  "Sapphire Griya Modern":"bg-teal-50 text-teal-700",
+  "Samara Graha":         "bg-orange-50 text-orange-700",
+  "Samara Griya":         "bg-purple-50 text-purple-700",
 };
+function unitBisnisColor(ub: string): string {
+  return UNIT_BISNIS_COLOR[ub] ?? "bg-slate-100 text-slate-600";
+}
 
 export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props) {
   const router = useRouter();
@@ -203,7 +214,10 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
         if (!proj) return prev;
         return {
           ...prev,
-          userProjects: [...prev.userProjects, { projectId, project: { id: proj.id, name: proj.name, cluster: proj.cluster } }],
+          userProjects: [...prev.userProjects, {
+            projectId,
+            project: { id: proj.id, name: proj.name, cluster: proj.cluster, unitBisnis: proj.unitBisnis },
+          }],
         };
       }
     });
@@ -214,10 +228,11 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
   }
 
 
-  // Group projects by clusterType for the access modal
-  const projectsByType = projects.reduce<Record<string, Project[]>>((acc, p) => {
-    if (!acc[p.clusterType]) acc[p.clusterType] = [];
-    acc[p.clusterType].push(p);
+  // Group projects by unitBisnis (from Siproper) for the access modal
+  const projectsByUnitBisnis = projects.reduce<Record<string, Project[]>>((acc, p) => {
+    const key = p.unitBisnis ?? p.clusterType;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(p);
     return acc;
   }, {});
 
@@ -387,15 +402,15 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
         <div className="space-y-4">
           <p className="text-sm text-slate-500">Centang proyek yang dapat diakses pengguna ini.</p>
           {projects.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">Belum ada proyek. Tambah proyek di menu Pengaturan.</p>
+            <p className="text-sm text-slate-400 text-center py-6">Sinkronisasi proyek dari Siproper sedang berlangsung, coba muat ulang halaman.</p>
           ) : (
-            Object.entries(projectsByType).map(([type, typeProjects]) => (
-              <div key={type}>
-                <p className={`text-[11px] font-bold px-2 py-1 rounded-md inline-block mb-2 ${CLUSTER_COLOR[type] ?? "bg-slate-100 text-slate-600"}`}>
-                  {type}
+            Object.entries(projectsByUnitBisnis).map(([unitBisnis, grpProjects]) => (
+              <div key={unitBisnis}>
+                <p className={`text-[11px] font-bold px-2 py-1 rounded-md inline-block mb-2 ${unitBisnisColor(unitBisnis)}`}>
+                  {unitBisnis}
                 </p>
                 <div className="space-y-1.5">
-                  {typeProjects.map((proj) => {
+                  {grpProjects.map((proj) => {
                     const hasAccess = !!projectUser?.userProjects.find((up) => up.projectId === proj.id);
                     const isLoading = savingProject === proj.id;
                     return (
@@ -412,7 +427,9 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-slate-800">{proj.name}</p>
-                          <p className="text-xs text-slate-400">{proj.cluster}</p>
+                          {proj.cluster && (
+                            <p className="text-xs text-slate-400">{proj.cluster}</p>
+                          )}
                         </div>
                         {isLoading && <span className="text-xs text-slate-400">Menyimpan...</span>}
                       </label>
