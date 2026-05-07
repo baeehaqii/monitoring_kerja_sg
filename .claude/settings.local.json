@@ -16,7 +16,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Read(//Users/unname/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/a861b40b-e53d-425d-ab11-732ec0c40183/59d7b0a4-8ea6-478d-9625-3266641533fd/skills/xlsx/**)",
+      "Bash(extract-text \"/Users/unname/Downloads/Monitoring Program Kerja_GM Marketing Graha.xlsx\")"
     ]
   }
 }
