@@ -61,27 +61,23 @@ jobs:
             echo "==> Building Next.js app..."
             npm run build
 
-            echo "==> Restarting app..."
-            # Kill semua proses next-server lama (termasuk yang jalan sebagai www)
-            sudo fuser -k 3003/tcp 2>/dev/null || true
-            sleep 2
+            echo "==> Restarting app via PM2 (www user)..."
 
-            NODE_MANAGER="/www/server/panel/plugin/nodejs_manager/node_manager.js"
-            if [ -f "$NODE_MANAGER" ]; then
-              sudo -u www node $NODE_MANAGER stop monitoring_kerja_sg 2>/dev/null || true
-              sleep 1
-              sudo -u www node $NODE_MANAGER start monitoring_kerja_sg 2>/dev/null || true
-              sleep 2
-              # Verifikasi port terbuka
-              fuser 3003/tcp 2>/dev/null && echo "✅ App running on port 3003" || echo "⚠️ App belum running, fallback ke manual start"
+            # Fix ownership back to www so PM2 can read the files
+            sudo chown -R www:www $PROJECT_DIR
+
+            # Reload/restart via PM2 (zero-downtime if possible)
+            if sudo -u www pm2 describe monitoring_kerja_sg > /dev/null 2>&1; then
+              sudo -u www pm2 reload monitoring_kerja_sg --update-env 2>&1
+              echo "✅ PM2 reload selesai"
+            else
+              # First deploy: register ke PM2
+              sudo -u www bash -c "cd $PROJECT_DIR && pm2 start npm --name monitoring_kerja_sg -- start"
+              sudo -u www pm2 save
+              echo "✅ PM2 start selesai (pertama kali)"
             fi
 
-            # Fallback: jika node_manager gagal, start manual
-            if ! fuser 3003/tcp 2>/dev/null; then
-              mkdir -p $PROJECT_DIR/logs
-              nohup npm start > $PROJECT_DIR/logs/app.log 2>&1 &
-              sleep 3
-              fuser 3003/tcp && echo "✅ App started manually" || echo "❌ App gagal start"
-            fi
+            sleep 5
+            ss -tlnp | grep -q ':3003' && echo "✅ App listening on port 3003" || echo "❌ App belum running, cek: sudo -u www pm2 logs monitoring_kerja_sg"
 
             echo "==> Deploy complete!"
