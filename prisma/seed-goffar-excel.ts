@@ -21,15 +21,20 @@ async function main() {
   if (!division) throw new Error("Division Bisnis Graha tidak ditemukan!");
   console.log(`── Division: ${division.name} (${division.id})`);
 
-  // 2. Find strategies for Bisnis Graha
+  // 2. Find Goffar's user
+  const goffar = await prisma.user.findFirst({ where: { email: "abdulgoffar@siproper.com" } });
+  if (!goffar) throw new Error("User Goffar tidak ditemukan!");
+  console.log(`── User: ${goffar.name} (${goffar.id})`);
+
+  // 3. Find base strategies for Bisnis Graha (numbers 1-4)
   const strategies = await prisma.strategy.findMany({
-    where: { divisionId: division.id, projectId: null },
+    where: { divisionId: division.id, number: { lte: 4 } },
     include: { programKerja: { orderBy: { number: "asc" } } },
     orderBy: { number: "asc" },
   });
   console.log(`── Strategies: ${strategies.length} ditemukan`);
 
-  // 3. Build AP data dari Excel
+  // 4. Build AP data dari Excel (defined below, processing starts after)
 
   // Data AllProject: {stratNo → {pkNo → [aps]}}
   const allProjectData: Record<number, Record<number, { pkName: string; aps: { number: number; name: string; status: string }[] }>> = {
@@ -673,48 +678,130 @@ async function main() {
     { strat_no: 4, pk_no: 3, seq: 1, name: "[GRAHA IV] Fun Run Town House Purbalingga", keterangan: "" },
   ];
 
-  // 4. Process each strategy
-  for (const strategy of strategies) {
-    const stratNo = strategy.number;
-    const pkDataMap = allProjectData[stratNo];
-    if (!pkDataMap) {
-      console.log(`  ⚠️ Strategi ${stratNo} tidak ada di data Excel, skip`);
-      continue;
-    }
+  // 4. Create cluster projects
+  console.log("\n── Membuat cluster projects...");
+  const clusterDefs = [
+    { label: "All Project",    cluster: "All Project" },
+    { label: "Bisnis Graha I",   cluster: "Bisnis Graha I" },
+    { label: "Bisnis Graha II",  cluster: "Bisnis Graha II" },
+    { label: "Bisnis Graha III", cluster: "Bisnis Graha III" },
+    { label: "Bisnis Graha IV",  cluster: "Bisnis Graha IV" },
+  ];
+  const clusterProjects: Record<string, { id: string; name: string }> = {};
+  for (const def of clusterDefs) {
+    const proj = await prisma.project.upsert({
+      where: { name: def.label },
+      update: {},
+      create: { name: def.label, cluster: def.cluster, clusterType: "GRAHA" },
+    });
+    clusterProjects[def.label] = proj;
+    console.log(`   ✓ Project: ${proj.name}`);
+  }
+
+  // Link Goffar to each cluster project (so dashboard filter includes cluster strategies)
+  for (const proj of Object.values(clusterProjects)) {
+    await prisma.userProject.upsert({
+      where: { userId_projectId: { userId: goffar.id, projectId: proj.id } },
+      update: {},
+      create: { userId: goffar.id, projectId: proj.id },
+    });
+  }
+  console.log(`   ✓ UserProject Goffar: ${Object.keys(clusterProjects).length} cluster projects`);
+
+  // Base strategies (numbers 1-4) = AllProject
+  const baseStrategies = strategies.filter((s) => s.number <= 4);
+
+  // 5. Seed AllProject strategies — only AllProject APs, link to "All Project" project
+  console.log("\n── Seeding AllProject...");
+  for (const strategy of baseStrategies) {
+    await prisma.strategy.update({
+      where: { id: strategy.id },
+      data: { projectId: clusterProjects["All Project"].id },
+    });
+
+    const pkDataMap = allProjectData[strategy.number];
+    if (!pkDataMap) continue;
 
     for (const pk of strategy.programKerja) {
       const pkData = pkDataMap[pk.number];
       if (!pkData) continue;
 
-      // Hapus semua AP existing untuk PK ini
       await prisma.actionPlan.deleteMany({ where: { programKerjaId: pk.id } });
-
-      // Seed AllProject APs
-      const apsToCreate: { programKerjaId: string; number: number; name: string }[] = [];
-      for (const ap of pkData.aps) {
-        apsToCreate.push({ programKerjaId: pk.id, number: ap.number, name: ap.name });
-      }
-
-      // Seed Graha APs (dengan offset setelah AllProject)
-      const allProjMax = pkData.aps.length > 0 ? Math.max(...pkData.aps.map(a => a.number)) : 0;
-      const grahaDatasets = [grahaiData, grahaiiData, grahaiiiData, grahaivData];
-      let grahaOffset = allProjMax;
-      for (const grahaDataset of grahaDatasets) {
-        const filtered = grahaDataset.filter(d => d.strat_no === stratNo && d.pk_no === pk.number);
-        for (const item of filtered) {
-          grahaOffset++;
-          apsToCreate.push({ programKerjaId: pk.id, number: grahaOffset, name: item.name });
-        }
-      }
-
-      await prisma.actionPlan.createMany({ data: apsToCreate, skipDuplicates: true });
-      console.log(`  ✓ S${stratNo}.PK${pk.number} "${pk.name.substring(0,40)}": ${apsToCreate.length} APs`);
+      const apsToCreate = pkData.aps.map((ap) => ({
+        programKerjaId: pk.id,
+        number: ap.number,
+        name: ap.name,
+      }));
+      if (apsToCreate.length > 0)
+        await prisma.actionPlan.createMany({ data: apsToCreate, skipDuplicates: true });
+      console.log(`   ✓ S${strategy.number}.PK${pk.number}: ${apsToCreate.length} APs`);
     }
   }
 
-  // 5. Summary
+  // 6. Seed per-cluster Graha strategies
+  const grahaClusters = [
+    { label: "Bisnis Graha I",   data: grahaiData,   numOffset: 4  },
+    { label: "Bisnis Graha II",  data: grahaiiData,  numOffset: 8  },
+    { label: "Bisnis Graha III", data: grahaiiiData, numOffset: 12 },
+    { label: "Bisnis Graha IV",  data: grahaivData,  numOffset: 16 },
+  ];
+
+  for (const cluster of grahaClusters) {
+    console.log(`\n── Seeding ${cluster.label}...`);
+    const clusterProject = clusterProjects[cluster.label];
+
+    for (const baseStrat of baseStrategies) {
+      const stratNumber = baseStrat.number + cluster.numOffset;
+
+      const strategy = await prisma.strategy.upsert({
+        where: {
+          divisionId_periodId_number: {
+            divisionId: division.id,
+            periodId: baseStrat.periodId,
+            number: stratNumber,
+          },
+        },
+        update: { projectId: clusterProject.id, name: baseStrat.name },
+        create: {
+          divisionId: division.id,
+          periodId: baseStrat.periodId,
+          number: stratNumber,
+          name: baseStrat.name,
+          projectId: clusterProject.id,
+        },
+      });
+
+      const pkDataMap = allProjectData[baseStrat.number];
+      if (!pkDataMap) continue;
+
+      for (const [pkNoStr, pkData] of Object.entries(pkDataMap)) {
+        const pkNo = parseInt(pkNoStr);
+        const clusterAPs = cluster.data.filter(
+          (d) => d.strat_no === baseStrat.number && d.pk_no === pkNo
+        );
+        if (clusterAPs.length === 0) continue;
+
+        const pk = await prisma.programKerja.upsert({
+          where: { strategyId_number: { strategyId: strategy.id, number: pkNo } },
+          update: { name: pkData.pkName },
+          create: { strategyId: strategy.id, number: pkNo, name: pkData.pkName },
+        });
+
+        await prisma.actionPlan.deleteMany({ where: { programKerjaId: pk.id } });
+        const apsToCreate = clusterAPs.map((ap) => ({
+          programKerjaId: pk.id,
+          number: ap.seq,
+          name: ap.name,
+        }));
+        await prisma.actionPlan.createMany({ data: apsToCreate, skipDuplicates: true });
+        console.log(`   ✓ S${stratNumber}.PK${pkNo}: ${apsToCreate.length} APs`);
+      }
+    }
+  }
+
+  // 7. Summary
   const totalAP = await prisma.actionPlan.count({
-    where: { programKerja: { strategy: { divisionId: division.id, projectId: null } } }
+    where: { programKerja: { strategy: { divisionId: division.id } } },
   });
   console.log(`\n✅ Seeding selesai! Total AP Bisnis Graha: ${totalAP}`);
 }

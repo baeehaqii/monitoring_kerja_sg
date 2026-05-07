@@ -43,6 +43,7 @@ type Strategy = {
   name: string;
   division: Division;
   period: Period;
+  project: { id: string; name: string } | null;
   programKerja: ProgramKerja[];
 };
 
@@ -221,7 +222,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">{strategy.name}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {strategy.division.name} · {strategy.period.name} · {strategy.programKerja.length} Program Kerja
+                      {strategy.project?.name ?? strategy.division.name} · {strategy.period.name} · {strategy.programKerja.length} Program Kerja
                       {strategySLA && <> · <span className="text-slate-500">SLA: {formatDate(strategySLA)}</span></>}
                     </p>
                   </div>

@@ -17,6 +17,7 @@ async function getProkerData(divisionId: string | null, role: string) {
       where: divisionStrategyFilter(user),
       include: {
         division: true,
+        project: { select: { id: true, name: true } },
         period: { include: { weeks: { orderBy: { weekNumber: "asc" } } } },
         programKerja: {
           include: {
