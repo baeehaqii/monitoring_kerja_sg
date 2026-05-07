@@ -160,15 +160,27 @@ export function DashboardClient({ data, divisions, projects, userName, userRole,
                 {ROLE_LABEL[userRole].label}
               </span>
             )}
-            {/* Project chips — hanya untuk non-superadmin yang punya project */}
-            {!isSuperAdmin && userProjects.map((p) => (
-              <span
-                key={p.id}
-                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${CLUSTER_CHIP[p.clusterType] ?? "bg-slate-100 text-slate-500 border border-slate-200"}`}
-              >
-                {p.cluster} · {p.name}
-              </span>
-            ))}
+            {/* Project summary chips */}
+            {!isSuperAdmin && userProjects.length > 0 && (() => {
+              const realProjects = userProjects.filter(
+                (p) => !p.cluster.startsWith("Bisnis Graha") && p.cluster !== "All Project"
+              );
+              const unitBisnis = userProjects.filter((p) => p.cluster.startsWith("Bisnis Graha"));
+              return (
+                <>
+                  {realProjects.length > 0 && (
+                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
+                      {realProjects.length} Proyek
+                    </span>
+                  )}
+                  {unitBisnis.length > 0 && (
+                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-200">
+                      {unitBisnis.length} Unit Bisnis
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         }
         action={
