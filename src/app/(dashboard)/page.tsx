@@ -16,7 +16,8 @@ async function getDashboardData(
   accessibleProjectIds: string[] | null,
   selectedProjectId: string | null,
   selectedDivId: string | null,
-  dateFilter: string | null
+  dateFilter: string | null,
+  userDivisionId: string | null = null
 ) {
   const superAdmin = isSuperAdmin(role);
 
@@ -45,9 +46,19 @@ async function getDashboardData(
     if (!accessibleProjectIds || accessibleProjectIds.length === 0) {
       strategyFilter = { projectId: "___no_match___" };
     } else if (selectedProjectId && accessibleProjectIds.includes(selectedProjectId)) {
-      strategyFilter = { projectId: selectedProjectId };
+      strategyFilter = {
+        OR: [
+          { projectId: selectedProjectId },
+          ...(userDivisionId ? [{ projectId: null, divisionId: userDivisionId }] : []),
+        ],
+      };
     } else {
-      strategyFilter = { projectId: { in: accessibleProjectIds } };
+      strategyFilter = {
+        OR: [
+          { projectId: { in: accessibleProjectIds } },
+          ...(userDivisionId ? [{ projectId: null, divisionId: userDivisionId }] : []),
+        ],
+      };
     }
   }
 
@@ -205,8 +216,10 @@ export default async function DashboardPage(
     ? null
     : await getUserAccessibleProjectIds(session.user.id);
 
+  const userDivisionId = (session.user as any).divisionId ?? null;
+
   const [data, divisions, projects, userProjectsRaw] = await Promise.all([
-    getDashboardData(session.user.role, accessibleProjectIds, selectedProjectId, selectedDivId, filterDate),
+    getDashboardData(session.user.role, accessibleProjectIds, selectedProjectId, selectedDivId, filterDate, userDivisionId),
     superAdmin
       ? prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
       : Promise.resolve([]),
