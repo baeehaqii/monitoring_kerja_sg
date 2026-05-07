@@ -62,15 +62,26 @@ jobs:
             npm run build
 
             echo "==> Restarting app..."
+            # Kill semua proses next-server lama (termasuk yang jalan sebagai www)
+            sudo fuser -k 3003/tcp 2>/dev/null || true
+            sleep 2
+
             NODE_MANAGER="/www/server/panel/plugin/nodejs_manager/node_manager.js"
             if [ -f "$NODE_MANAGER" ]; then
-              node $NODE_MANAGER stop monitoring_kerja_sg 2>/dev/null || true
+              sudo -u www node $NODE_MANAGER stop monitoring_kerja_sg 2>/dev/null || true
+              sleep 1
+              sudo -u www node $NODE_MANAGER start monitoring_kerja_sg 2>/dev/null || true
               sleep 2
-              node $NODE_MANAGER start monitoring_kerja_sg
-            else
-              fuser -k 3003/tcp 2>/dev/null || true
-              sleep 2
+              # Verifikasi port terbuka
+              fuser 3003/tcp 2>/dev/null && echo "✅ App running on port 3003" || echo "⚠️ App belum running, fallback ke manual start"
+            fi
+
+            # Fallback: jika node_manager gagal, start manual
+            if ! fuser 3003/tcp 2>/dev/null; then
+              mkdir -p $PROJECT_DIR/logs
               nohup npm start > $PROJECT_DIR/logs/app.log 2>&1 &
+              sleep 3
+              fuser 3003/tcp && echo "✅ App started manually" || echo "❌ App gagal start"
             fi
 
             echo "==> Deploy complete!"
