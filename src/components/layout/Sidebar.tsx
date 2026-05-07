@@ -12,6 +12,10 @@ import {
   Users,
   MessageCircleQuestion,
   X,
+  Database,
+  Building2,
+  MapPin,
+  FolderKanban,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -25,6 +29,12 @@ const navItems = [
 const adminItems = [
   { href: "/settings/users", icon: Users, label: "Pengguna" },
   { href: "/settings", icon: Settings, label: "Pengaturan" },
+];
+
+const masterDataItems = [
+  { href: "/master/unit-bisnis", icon: Building2, label: "Unit Bisnis" },
+  { href: "/master/areas", icon: MapPin, label: "Area" },
+  { href: "/master/proyek", icon: FolderKanban, label: "Proyek" },
 ];
 
 interface SidebarProps {
@@ -50,6 +60,7 @@ export function Sidebar({
   };
 
   const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const isAdmin = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
 
   return (
     <aside className="flex flex-col w-[280px] shrink-0 h-screen bg-white border-r border-border overflow-hidden">
@@ -114,6 +125,46 @@ export function Sidebar({
             ))}
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="flex flex-col gap-3">
+            <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">
+              Master Data
+            </h3>
+            <div className="flex flex-col gap-0.5">
+              {masterDataItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
+                    isActive(item.href)
+                      ? "bg-muted"
+                      : "bg-white hover:bg-muted"
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      "w-5 h-5 flex-shrink-0 transition-colors duration-200",
+                      isActive(item.href) ? "text-foreground" : "text-secondary"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-sm transition-colors duration-200",
+                      isActive(item.href)
+                        ? "font-semibold text-foreground"
+                        : "font-medium text-secondary"
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {isSuperAdmin && (
           <div className="flex flex-col gap-3">
