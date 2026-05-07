@@ -65,19 +65,47 @@ jobs:
 
             # Fix ownership ke www agar app bisa baca file build
             sudo chown -R www:www $PROJECT_DIR
-
-            # Kill proses lama di port 3003
-            sudo fuser -k 3003/tcp 2>/dev/null || true
-            sudo pkill -f "next-server" 2>/dev/null || true
-            sleep 3
-
-            # Start langsung sebagai www (sama seperti portalsiproper)
             mkdir -p $PROJECT_DIR/logs
-            sudo -u www bash -c "cd $PROJECT_DIR && nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &"
+
+            # Cari PM2 binary (aaPanel Node Project menggunakan PM2 internaly)
+            PM2_BIN=$(sudo -u www which pm2 2>/dev/null || true)
+            if [ -z "$PM2_BIN" ]; then
+              for candidate in \
+                "/www/server/nodejs/v24.11.0/bin/pm2" \
+                "/www/server/nvm/versions/node/v24.11.0/bin/pm2" \
+                "/usr/local/bin/pm2" \
+                "/usr/bin/pm2"; do
+                [ -x "$candidate" ] && PM2_BIN="$candidate" && break
+              done
+            fi
+
+            if [ -n "$PM2_BIN" ]; then
+              echo "==> Using PM2 at: $PM2_BIN"
+
+              # Kill stray nohup processes dulu (migrasi dari mekanisme lama)
+              sudo fuser -k 3003/tcp 2>/dev/null || true
+              sudo pkill -f "next-server" 2>/dev/null || true
+              sleep 2
+
+              # Reload jika sudah ada, atau start baru via ecosystem.config.js
+              sudo -u www $PM2_BIN reload monitoring_kerja_sg --update-env 2>/dev/null \
+                || sudo -u www $PM2_BIN start $PROJECT_DIR/ecosystem.config.js
+
+              # Simpan list PM2 agar survive setelah reboot
+              sudo -u www $PM2_BIN save --force 2>/dev/null || true
+
+            else
+              echo "⚠️  PM2 tidak ditemukan, fallback ke nohup..."
+              sudo fuser -k 3003/tcp 2>/dev/null || true
+              sudo pkill -f "next-server" 2>/dev/null || true
+              sleep 2
+              sudo -u www bash -c "cd $PROJECT_DIR && nohup npm start >> $PROJECT_DIR/logs/app.log 2>&1 &"
+            fi
+
             sleep 8
 
             ss -tlnp | grep -q ':3003' \
               && echo "✅ App listening on port 3003" \
-              || echo "❌ App gagal start — cek log: $PROJECT_DIR/logs/app.log"
+              || echo "❌ App gagal start — cek logs: $PROJECT_DIR/logs/"
 
             echo "==> Deploy complete!"
