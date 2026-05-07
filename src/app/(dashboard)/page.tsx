@@ -37,29 +37,43 @@ async function getDashboardData(
     dateFilterWhere = { gte: d, lte: end };
   }
 
-  // Build strategy-level filter
+  // Build accessible strategy IDs
+  let strategyIdFilter: { id: { in: string[] } } | Record<string, never> = {};
+
+  if (superAdmin) {
+    // superAdmin: no strategy ID restriction, use direct filter below
+  } else {
+    let strategyWhere: any = { id: "___no_match___" };
+    if (accessibleProjectIds && accessibleProjectIds.length > 0) {
+      const orConditions: any[] = [{ projectId: { in: accessibleProjectIds } }];
+      if (userDivisionId) {
+        orConditions.push({ projectId: null, divisionId: userDivisionId });
+      }
+      strategyWhere = { OR: orConditions };
+      if (selectedProjectId && accessibleProjectIds.includes(selectedProjectId)) {
+        strategyWhere = {
+          OR: [
+            { projectId: selectedProjectId },
+            ...(userDivisionId ? [{ projectId: null, divisionId: userDivisionId }] : []),
+          ],
+        };
+      }
+    }
+    const matchingStrategies = await prisma.strategy.findMany({
+      where: strategyWhere,
+      select: { id: true },
+    });
+    strategyIdFilter = { id: { in: matchingStrategies.map((s) => s.id) } };
+  }
+
+  // Build strategy-level filter (superAdmin uses direct field filter)
   let strategyFilter: any = {};
   if (superAdmin) {
     if (selectedProjectId) strategyFilter = { projectId: selectedProjectId };
     else if (selectedDivId) strategyFilter = { divisionId: selectedDivId };
+    else strategyFilter = {};
   } else {
-    if (!accessibleProjectIds || accessibleProjectIds.length === 0) {
-      strategyFilter = { projectId: "___no_match___" };
-    } else if (selectedProjectId && accessibleProjectIds.includes(selectedProjectId)) {
-      strategyFilter = {
-        OR: [
-          { projectId: selectedProjectId },
-          ...(userDivisionId ? [{ projectId: null, divisionId: userDivisionId }] : []),
-        ],
-      };
-    } else {
-      strategyFilter = {
-        OR: [
-          { projectId: { in: accessibleProjectIds } },
-          ...(userDivisionId ? [{ projectId: null, divisionId: userDivisionId }] : []),
-        ],
-      };
-    }
+    strategyFilter = strategyIdFilter;
   }
 
   const apWhere: any = {
