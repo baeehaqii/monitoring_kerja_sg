@@ -6,39 +6,58 @@ import { MapPin } from "lucide-react";
 
 type Area = Record<string, unknown>;
 
-function getValue(obj: Record<string, unknown>, key: string): string {
-  const v = obj[key];
+type Col = { label: string; fields: string[] };
+
+const COLUMNS: Col[] = [
+  { label: "ID",           fields: ["id"] },
+  { label: "Nama Area",    fields: ["nama_area", "nama", "name"] },
+  { label: "Unit Bisnis",  fields: ["unit_bisnis", "unitBisnis", "unit_bisnis_nama", "nama_unit_bisnis"] },
+];
+
+function pick(row: Area, fields: string[]): string {
+  for (const f of fields) {
+    const v = row[f];
+    if (v !== null && v !== undefined) return resolveValue(v);
+  }
+  return "—";
+}
+
+function resolveValue(v: unknown): string {
   if (v === null || v === undefined) return "—";
-  if (typeof v === "object") return JSON.stringify(v);
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "—";
+    return v.map(resolveValue).join(", ");
+  }
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    const name =
+      o.nama_unit_bisnis ?? o.nama_area ?? o.nama ?? o.name;
+    return name ? String(name) : "—";
+  }
   return String(v);
 }
 
 export default async function AreasPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const role = session.user.role;
-  if (!["SUPER_ADMIN", "ADMIN"].includes(role)) redirect("/");
+  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) redirect("/");
 
   let data: Area[] = [];
   let error: string | null = null;
 
   try {
-    const res = await siproperFetch<{ data?: Area[]; success?: boolean } | Area[]>("/api/areas");
-    data = Array.isArray(res) ? res : ((res as any).data ?? []);
-  } catch (e: any) {
-    error = e?.message ?? "Gagal mengambil data";
+    const res = await siproperFetch<{ data?: Area[] } | Area[]>("/api/areas");
+    data = Array.isArray(res) ? res : ((res as { data?: Area[] }).data ?? []);
+  } catch (e: unknown) {
+    error = e instanceof Error ? e.message : "Gagal mengambil data";
   }
-
-  const columns = data.length > 0 ? Object.keys(data[0]) : [];
 
   return (
     <div>
-      <Header
-        title="Area"
-        subtitle="Data area dari Siproper"
-      />
+      <Header title="Area" subtitle="Data area dari Siproper" />
+
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {error}
         </div>
       ) : data.length === 0 ? (
@@ -55,10 +74,10 @@ export default async function AreasPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide w-12">#</th>
-                  {columns.map((col) => (
-                    <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-                      {col.replace(/_/g, " ")}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide w-10">#</th>
+                  {COLUMNS.map((c) => (
+                    <th key={c.label} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
+                      {c.label}
                     </th>
                   ))}
                 </tr>
@@ -67,9 +86,9 @@ export default async function AreasPage() {
                 {data.map((row, i) => (
                   <tr key={i} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-xs">{i + 1}</td>
-                    {columns.map((col) => (
-                      <td key={col} className="px-4 py-3 text-slate-700 whitespace-nowrap max-w-[240px] truncate">
-                        {getValue(row, col)}
+                    {COLUMNS.map((c) => (
+                      <td key={c.label} className="px-4 py-3 text-slate-700 max-w-[280px] truncate">
+                        {pick(row, c.fields)}
                       </td>
                     ))}
                   </tr>
