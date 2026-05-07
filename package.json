@@ -12,6 +12,7 @@
     "db:push": "prisma db push",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed-goffar": "npx tsx prisma/seed-goffar.ts",
+    "db:seed-goffar-excel": "npx tsx prisma/seed-goffar-excel.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
