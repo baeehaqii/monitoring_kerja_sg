@@ -74,6 +74,7 @@ export default async function ProkerPage() {
         raciMatrix={JSON.parse(JSON.stringify(raciMatrix ?? { entries: [] }))}
         userRole={session.user.role}
         userDivisionId={session.user.divisionId}
+        userPermissions={session.user.permissions ?? []}
       />
     </div>
   );

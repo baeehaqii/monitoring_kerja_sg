@@ -17,6 +17,7 @@ import {
   Filter,
 } from "lucide-react";
 import Link from "next/link";
+import { DeadlineCalendar, type DeadlineItem } from "@/components/dashboard/DeadlineCalendar";
 
 function useCountUp(end: number, duration: number = 800) {
   const [count, setCount] = useState(0);
@@ -83,16 +84,15 @@ type DashboardData = {
   delayedTasks: any[];
   divisionStats: any[];
   isAdmin: boolean;
+  deadlineItems: DeadlineItem[];
 };
 
 type ProjectItem = { id: string; name: string; cluster: string; clusterType: string };
 
-const ROLE_LABEL: Record<string, { label: string; className: string }> = {
-  SUPER_ADMIN:      { label: "Super Admin",      className: "bg-red-50 text-red-600 border border-red-200" },
-  ADMIN:            { label: "Admin",             className: "bg-amber-50 text-amber-600 border border-amber-200" },
-  GENERAL_MANAGER:  { label: "General Manager",   className: "bg-green-50 text-green-600 border border-green-200" },
-  DIREKTUR_BISNIS:  { label: "Direktur Bisnis",   className: "bg-blue-50 text-blue-600 border border-blue-200" },
-  MEMBER:           { label: "Member",            className: "bg-slate-100 text-slate-500 border border-slate-200" },
+// Hanya untuk enum system role (SUPER_ADMIN, ADMIN) — role lain pakai customRoleName
+const SYSTEM_ROLE_LABEL: Record<string, { label: string; className: string }> = {
+  SUPER_ADMIN: { label: "Super Admin", className: "bg-red-50 text-red-600 border border-red-200" },
+  ADMIN:       { label: "Admin",       className: "bg-amber-50 text-amber-600 border border-amber-200" },
 };
 
 const CLUSTER_CHIP: Record<string, string> = {
@@ -107,11 +107,12 @@ interface Props {
   projects: ProjectItem[];
   userName: string;
   userRole: string;
+  userRoleName: string | null;
   userProjects: ProjectItem[];
   isSuperAdmin: boolean;
 }
 
-export function DashboardClient({ data, divisions, projects, userName, userRole, userProjects, isSuperAdmin }: Props) {
+export function DashboardClient({ data, divisions, projects, userName, userRole, userRoleName, userProjects, isSuperAdmin }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [animKey, setAnimKey] = useState(0);
@@ -154,10 +155,10 @@ export function DashboardClient({ data, divisions, projects, userName, userRole,
         subtitle={
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <span className="text-sm text-secondary">Selamat datang, <span className="font-semibold text-foreground">{userName}</span></span>
-            {/* Role chip */}
-            {ROLE_LABEL[userRole] && (
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${ROLE_LABEL[userRole].className}`}>
-                {ROLE_LABEL[userRole].label}
+            {/* Role chip — pakai customRoleName jika ada, fallback ke system role label */}
+            {(userRoleName || SYSTEM_ROLE_LABEL[userRole]) && (
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${SYSTEM_ROLE_LABEL[userRole]?.className ?? "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+                {userRoleName ?? SYSTEM_ROLE_LABEL[userRole]?.label}
               </span>
             )}
             {/* Project summary chips */}
@@ -415,6 +416,9 @@ export function DashboardClient({ data, divisions, projects, userName, userRole,
           </div>
         </div>
       </div>
+
+      {/* Kalender Deadline */}
+      <DeadlineCalendar deadlines={data.deadlineItems} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
         <div className="lg:col-span-2 flex flex-col rounded-2xl border border-border p-6 bg-white">

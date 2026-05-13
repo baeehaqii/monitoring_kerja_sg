@@ -18,7 +18,24 @@
       "Bash(git push:*)",
       "Bash(npx tsc:*)",
       "Read(//Users/unname/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/a861b40b-e53d-425d-ab11-732ec0c40183/59d7b0a4-8ea6-478d-9625-3266641533fd/skills/xlsx/**)",
-      "Bash(extract-text \"/Users/unname/Downloads/Monitoring Program Kerja_GM Marketing Graha.xlsx\")"
+      "Bash(extract-text \"/Users/unname/Downloads/Monitoring Program Kerja_GM Marketing Graha.xlsx\")",
+      "Bash(gh run *)",
+      "Bash(gh auth *)",
+      "Bash(nc -zv -w 10 103.94.239.119 2299)",
+      "Bash(ssh -i ~/.ssh/monitoring_deploy -p 2299 -o ConnectTimeout=10 -o StrictHostKeyChecking=no siproper-prod@103.94.239.119 \"echo '✅ SSH OK'; whoami; ls /www/wwwroot/monitoring_kerja_sg/ | head -10\")",
+      "Bash(ssh -i ~/.ssh/id_rsa -p 2299 -o ConnectTimeout=10 -o StrictHostKeyChecking=no siproper-prod@103.94.239.119 \"echo '✅ SSH OK'; whoami\")",
+      "Bash(ssh -i ~/.ssh/fdk_server -p 2299 -o ConnectTimeout=10 -o StrictHostKeyChecking=no siproper-prod@103.94.239.119 \"echo '✅ SSH OK'; whoami\")",
+      "Bash(ssh -i ~/.ssh/monitoring_deploy -p 2299 -o ConnectTimeout=10 -o StrictHostKeyChecking=no -v siproper-prod@103.94.239.119)",
+      "Bash(ssh -i *)",
+      "Bash(curl -s \"https://dev2.siproper.com/api/unit-bisnis\")",
+      "Bash(curl -s \"https://dev2.siproper.cloud/api/unit-bisnis\")",
+      "Bash(curl -s \"https://dev2.siproper.com/api/areas\")",
+      "Bash(curl -s \"https://dev2.siproper.cloud/api/areas\")",
+      "Bash(curl -sv \"https://dev2.siproper.com/api/unit-bisnis\")",
+      "Bash(curl -sv \"https://dev2.siproper.cloud/api/unit-bisnis\")",
+      "Bash(sed -n '33,40p' /Volumes/DATA/Dev/monitoring_kerja_sg/prisma/schema.prisma)",
+      "Bash(sed -n '94,115p' /Volumes/DATA/Dev/monitoring_kerja_sg/prisma/schema.prisma)",
+      "Bash(cat ~/.ssh/config 2>/dev/null | grep -A5 -i \"siproper\\\\|monitoring\\\\|prod\" || echo \"tidak ada entry terkait\")"
     ]
   }
 }

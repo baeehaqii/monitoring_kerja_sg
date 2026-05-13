@@ -16,31 +16,36 @@ import {
   Building2,
   MapPin,
   FolderKanban,
+  ShieldCheck,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/proker", icon: ClipboardList, label: "Program Kerja" },
-  { href: "/weekly", icon: CalendarDays, label: "Weekly Progress" },
-  { href: "/reminders", icon: Bell, label: "Pengingat SLA" },
+  { href: "/", icon: LayoutDashboard, label: "Dashboard", menuKey: "dashboard" },
+  { href: "/proker", icon: ClipboardList, label: "Program Kerja", menuKey: "proker" },
+  { href: "/weekly", icon: CalendarDays, label: "Weekly Progress", menuKey: "weekly" },
+  { href: "/reminders", icon: Bell, label: "Pengingat SLA", menuKey: "reminders" },
 ];
 
 const adminItems = [
-  { href: "/settings/users", icon: Users, label: "Pengguna" },
-  { href: "/settings", icon: Settings, label: "Pengaturan" },
+  { href: "/settings/users", icon: Users, label: "Pengguna", menuKey: "users" },
+  { href: "/settings/roles", icon: ShieldCheck, label: "Role & Akses", menuKey: "roles" },
+  { href: "/settings", icon: Settings, label: "Pengaturan", menuKey: "settings" },
 ];
 
 const masterDataItems = [
-  { href: "/master/unit-bisnis", icon: Building2, label: "Unit Bisnis" },
-  { href: "/master/areas", icon: MapPin, label: "Area" },
-  { href: "/master/proyek", icon: FolderKanban, label: "Proyek" },
+  { href: "/master/unit-bisnis", icon: Building2, label: "Unit Bisnis", menuKey: "master_unit_bisnis" },
+  { href: "/master/areas", icon: MapPin, label: "Area", menuKey: "master_areas" },
+  { href: "/master/proyek", icon: FolderKanban, label: "Proyek", menuKey: "master_proyek" },
 ];
+
+type MenuPermission = { menu: string; canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean };
 
 interface SidebarProps {
   userRole?: string;
   userName?: string;
   userDivision?: string | null;
+  userPermissions?: MenuPermission[];
   onClose?: () => void;
   isMobile?: boolean;
 }
@@ -49,6 +54,7 @@ export function Sidebar({
   userRole,
   userName,
   userDivision,
+  userPermissions = [],
   onClose,
   isMobile,
 }: SidebarProps) {
@@ -61,6 +67,13 @@ export function Sidebar({
 
   const isSuperAdmin = userRole === "SUPER_ADMIN";
   const isAdmin = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
+
+  // Cek apakah user punya akses ke menu tertentu (view atau lebih)
+  const hasMenuAccess = (menuKey: string) => {
+    if (isAdmin) return true;
+    const perm = userPermissions.find((p) => p.menu === menuKey);
+    return !!(perm?.canView || perm?.canCreate || perm?.canEdit || perm?.canDelete);
+  };
 
   return (
     <aside className="flex flex-col w-[280px] shrink-0 h-screen bg-white border-r border-border overflow-hidden">
@@ -88,123 +101,83 @@ export function Sidebar({
       </div>
 
       <div className="flex flex-col p-4 pb-28 gap-5 overflow-y-auto flex-1">
-        <div className="flex flex-col gap-3">
-          <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">
-            Menu Utama
-          </h3>
-          <div className="flex flex-col gap-0.5">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
-                  isActive(item.href)
-                    ? "bg-muted"
-                    : "bg-white hover:bg-muted"
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    "w-5 h-5 flex-shrink-0 transition-colors duration-200",
-                    isActive(item.href) ? "text-foreground" : "text-secondary"
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-sm transition-colors duration-200",
-                    isActive(item.href)
-                      ? "font-semibold text-foreground"
-                      : "font-medium text-secondary"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {isAdmin && (
-          <div className="flex flex-col gap-3">
-            <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">
-              Master Data
-            </h3>
-            <div className="flex flex-col gap-0.5">
-              {masterDataItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  className={cn(
-                    "flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
-                    isActive(item.href)
-                      ? "bg-muted"
-                      : "bg-white hover:bg-muted"
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      "w-5 h-5 flex-shrink-0 transition-colors duration-200",
-                      isActive(item.href) ? "text-foreground" : "text-secondary"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-sm transition-colors duration-200",
-                      isActive(item.href)
-                        ? "font-semibold text-foreground"
-                        : "font-medium text-secondary"
-                    )}
+        {/* Menu Utama — filter berdasarkan permission */}
+        {(() => {
+          const visible = navItems.filter((item) => hasMenuAccess(item.menuKey));
+          if (!visible.length) return null;
+          return (
+            <div className="flex flex-col gap-3">
+              <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">Menu Utama</h3>
+              <div className="flex flex-col gap-0.5">
+                {visible.map((item) => (
+                  <Link key={item.href} href={item.href} onClick={onClose}
+                    className={cn("flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
+                      isActive(item.href) ? "bg-muted" : "bg-white hover:bg-muted")}
                   >
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
+                    <item.icon className={cn("w-5 h-5 shrink-0 transition-colors duration-200",
+                      isActive(item.href) ? "text-foreground" : "text-secondary")} />
+                    <span className={cn("text-sm transition-colors duration-200",
+                      isActive(item.href) ? "font-semibold text-foreground" : "font-medium text-secondary")}>
+                      {item.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {isSuperAdmin && (
-          <div className="flex flex-col gap-3">
-            <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">
-              Admin
-            </h3>
-            <div className="flex flex-col gap-0.5">
-              {adminItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  className={cn(
-                    "flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
-                    isActive(item.href)
-                      ? "bg-muted"
-                      : "bg-white hover:bg-muted"
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      "w-5 h-5 flex-shrink-0 transition-colors duration-200",
-                      isActive(item.href) ? "text-foreground" : "text-secondary"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-sm transition-colors duration-200",
-                      isActive(item.href)
-                        ? "font-semibold text-foreground"
-                        : "font-medium text-secondary"
-                    )}
+        {/* Master Data — hanya ADMIN+ atau user yang punya permission master */}
+        {(() => {
+          const visible = masterDataItems.filter((item) => hasMenuAccess(item.menuKey));
+          if (!visible.length) return null;
+          return (
+            <div className="flex flex-col gap-3">
+              <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">Master Data</h3>
+              <div className="flex flex-col gap-0.5">
+                {visible.map((item) => (
+                  <Link key={item.href} href={item.href} onClick={onClose}
+                    className={cn("flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
+                      isActive(item.href) ? "bg-muted" : "bg-white hover:bg-muted")}
                   >
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
+                    <item.icon className={cn("w-5 h-5 shrink-0 transition-colors duration-200",
+                      isActive(item.href) ? "text-foreground" : "text-secondary")} />
+                    <span className={cn("text-sm transition-colors duration-200",
+                      isActive(item.href) ? "font-semibold text-foreground" : "font-medium text-secondary")}>
+                      {item.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
+
+        {/* Admin — hanya SUPER_ADMIN atau user yang punya permission admin */}
+        {(() => {
+          const visible = adminItems.filter((item) => hasMenuAccess(item.menuKey));
+          if (!visible.length) return null;
+          return (
+            <div className="flex flex-col gap-3">
+              <h3 className="font-medium text-xs text-secondary px-1 uppercase tracking-wide">Admin</h3>
+              <div className="flex flex-col gap-0.5">
+                {visible.map((item) => (
+                  <Link key={item.href} href={item.href} onClick={onClose}
+                    className={cn("flex items-center rounded-xl px-4 py-3 gap-3 transition-all duration-200",
+                      isActive(item.href) ? "bg-muted" : "bg-white hover:bg-muted")}
+                  >
+                    <item.icon className={cn("w-5 h-5 shrink-0 transition-colors duration-200",
+                      isActive(item.href) ? "text-foreground" : "text-secondary")} />
+                    <span className={cn("text-sm transition-colors duration-200",
+                      isActive(item.href) ? "font-semibold text-foreground" : "font-medium text-secondary")}>
+                      {item.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="absolute bottom-0 left-0 w-[280px] border-t border-border bg-white">

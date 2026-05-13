@@ -15,7 +15,7 @@ export const PUT = withHandler(async (req: NextRequest, { params }: { params: Pr
   }
 
   const body = await req.json();
-  const { name, role, divisionId, whatsappNumber, password } = body;
+  const { name, customRoleId, divisionId, whatsappNumber, password } = body;
 
   const updateData: Record<string, unknown> = {
     name,
@@ -23,7 +23,7 @@ export const PUT = withHandler(async (req: NextRequest, { params }: { params: Pr
   };
 
   if (isAdmin) {
-    updateData.role = role;
+    updateData.customRoleId = customRoleId || null;
     updateData.divisionId = divisionId || null;
   }
 

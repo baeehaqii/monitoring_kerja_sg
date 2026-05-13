@@ -47,7 +47,7 @@ export const POST = withHandler(async (req: NextRequest) => {
   }
 
   const body = await req.json();
-  const { name, email, password, role, divisionId, whatsappNumber } = body;
+  const { name, email, password, customRoleId, divisionId, whatsappNumber } = body;
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -63,7 +63,7 @@ export const POST = withHandler(async (req: NextRequest) => {
       name,
       email,
       password: hashed,
-      role: role ?? "MEMBER",
+      customRoleId: customRoleId || null,
       divisionId: divisionId || null,
       whatsappNumber: whatsappNumber || null,
     },

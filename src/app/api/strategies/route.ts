@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withHandler } from "@/lib/api-handler";
-import { canManage } from "@/lib/permissions";
+import { hasPermission } from "@/lib/permissions";
 
 export const GET = withHandler(async (req: NextRequest) => {
   const session = await auth();
@@ -49,7 +49,7 @@ export const GET = withHandler(async (req: NextRequest) => {
 export const POST = withHandler(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canManage(session.user.role)) {
+  if (!hasPermission(session.user, "proker", "canCreate")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

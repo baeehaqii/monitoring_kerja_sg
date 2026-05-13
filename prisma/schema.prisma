@@ -13,6 +13,8 @@ model User {
   email          String     @unique
   password       String?
   role           UserRole   @default(MEMBER)
+  customRoleId   String?
+  customRole     Role?      @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
   division       Division?  @relation(fields: [divisionId], references: [id])
   divisionId     String?
   whatsappNumber String?
@@ -20,6 +22,30 @@ model User {
   updatedAt      DateTime   @updatedAt
   reminders      Reminder[]
   userProjects   UserProject[]
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model RolePermission {
+  id       String  @id @default(cuid())
+  role     Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId   String
+  menu     String
+  canView  Boolean @default(false)
+  canCreate Boolean @default(false)
+  canEdit  Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  @@unique([roleId, menu])
 }
 
 enum UserRole {

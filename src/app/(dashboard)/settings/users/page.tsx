@@ -79,10 +79,12 @@ export default async function UsersPage() {
   // Sync Siproper projects ke local DB (background, tidak blokir render)
   await syncSiproperProjects();
 
-  const [users, divisions, projects] = await Promise.all([
+  const [users, divisions, projects, roles] = await Promise.all([
     prisma.user.findMany({
       select: {
         id: true, name: true, email: true, role: true,
+        customRoleId: true,
+        customRole: { select: { id: true, name: true } },
         divisionId: true, whatsappNumber: true, createdAt: true,
         division: { select: { name: true } },
         userProjects: {
@@ -108,6 +110,7 @@ export default async function UsersPage() {
         clusterType: true, unitBisnis: true, siproperProyekId: true,
       },
     }),
+    prisma.role.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return (
@@ -117,6 +120,7 @@ export default async function UsersPage() {
         users={JSON.parse(JSON.stringify(users))}
         divisions={JSON.parse(JSON.stringify(divisions))}
         projects={JSON.parse(JSON.stringify(projects))}
+        roles={JSON.parse(JSON.stringify(roles))}
         isSuperAdmin={session.user.role === "SUPER_ADMIN"}
       />
     </div>

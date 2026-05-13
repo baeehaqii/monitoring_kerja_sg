@@ -10,17 +10,20 @@ import { Plus, User, Pencil, Trash2, FolderOpen } from "lucide-react";
 
 type FormState = {
   name: string; email: string; password: string;
-  role: string; divisionId: string; whatsappNumber: string;
+  customRoleId: string; divisionId: string; whatsappNumber: string;
 };
+
+type RoleOption = { id: string; name: string };
 
 interface FormContentProps {
   form: FormState;
   editUser: boolean;
   divisions: { id: string; name: string }[];
+  roles: RoleOption[];
   onChange: (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 }
 
-function FormContent({ form, editUser, divisions, onChange }: FormContentProps) {
+function FormContent({ form, editUser, divisions, roles, onChange }: FormContentProps) {
   return (
     <div className="space-y-4">
       <Input label="Nama" required value={form.name} onChange={onChange("name")} placeholder="Nama lengkap" />
@@ -36,7 +39,13 @@ function FormContent({ form, editUser, divisions, onChange }: FormContentProps) 
         placeholder="••••••••"
       />
       <div className="grid grid-cols-2 gap-3">
-        <Select label="Role" value={form.role} onChange={onChange("role")} options={ROLES} />
+        <Select
+          label="Role"
+          value={form.customRoleId}
+          onChange={onChange("customRoleId")}
+          options={roles.map((r) => ({ value: r.id, label: r.name }))}
+          placeholder="— Pilih Role —"
+        />
         <Select
           label="Divisi"
           value={form.divisionId}
@@ -58,6 +67,8 @@ function FormContent({ form, editUser, divisions, onChange }: FormContentProps) 
 
 type UserItem = {
   id: string; name: string; email: string; role: string;
+  customRoleId: string | null;
+  customRole: { id: string; name: string } | null;
   divisionId: string | null; whatsappNumber: string | null; createdAt: string;
   division: { name: string } | null;
   userProjects: {
@@ -75,24 +86,9 @@ interface Props {
   users: UserItem[];
   divisions: Division[];
   projects: Project[];
+  roles: RoleOption[];
   isSuperAdmin: boolean;
 }
-
-const ROLES = [
-  { value: "MEMBER", label: "Member" },
-  { value: "GENERAL_MANAGER", label: "General Manager" },
-  { value: "DIREKTUR_BISNIS", label: "Direktur Bisnis" },
-  { value: "ADMIN", label: "Admin" },
-  { value: "SUPER_ADMIN", label: "Super Admin" },
-];
-
-const ROLE_BADGE: Record<string, { label: string; variant: "default" | "info" | "warning" | "danger" | "success" | "secondary" }> = {
-  MEMBER: { label: "Member", variant: "default" },
-  GENERAL_MANAGER: { label: "General Manager", variant: "success" },
-  DIREKTUR_BISNIS: { label: "Dir. Bisnis", variant: "info" },
-  ADMIN: { label: "Admin", variant: "warning" },
-  SUPER_ADMIN: { label: "Super Admin", variant: "danger" },
-};
 
 const UNIT_BISNIS_COLOR: Record<string, string> = {
   "Sapphire Graha":       "bg-blue-50 text-blue-700",
@@ -105,13 +101,13 @@ function unitBisnisColor(ub: string): string {
   return UNIT_BISNIS_COLOR[ub] ?? "bg-slate-100 text-slate-600";
 }
 
-export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props) {
+export function UsersClient({ users, divisions, projects, roles, isSuperAdmin }: Props) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserItem | null>(null);
   const [projectUser, setProjectUser] = useState<UserItem | null>(null);
   const [form, setForm] = useState({
-    name: "", email: "", password: "", role: "MEMBER",
+    name: "", email: "", password: "", customRoleId: "",
     divisionId: "", whatsappNumber: "",
   });
   const [saving, setSaving] = useState(false);
@@ -123,7 +119,8 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
     setEditUser(u);
     setForm({
       name: u.name, email: u.email, password: "",
-      role: u.role, divisionId: u.divisionId ?? "",
+      customRoleId: u.customRoleId ?? "",
+      divisionId: u.divisionId ?? "",
       whatsappNumber: u.whatsappNumber ?? "",
     });
   }
@@ -146,7 +143,7 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
     e.preventDefault();
     if (!editUser) return;
     setSaving(true);
-    const body: Record<string, string> = { name: form.name, role: form.role, divisionId: form.divisionId, whatsappNumber: form.whatsappNumber };
+    const body: Record<string, string> = { name: form.name, customRoleId: form.customRoleId, divisionId: form.divisionId, whatsappNumber: form.whatsappNumber };
     if (form.password) body.password = form.password;
     await fetch(`/api/users/${editUser.id}`, {
       method: "PUT",
@@ -224,7 +221,7 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
   }
 
   function resetForm() {
-    setForm({ name: "", email: "", password: "", role: "MEMBER", divisionId: "", whatsappNumber: "" });
+    setForm({ name: "", email: "", password: "", customRoleId: "", divisionId: "", whatsappNumber: "" });
   }
 
 
@@ -296,7 +293,7 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
                 <tr><td colSpan={isSuperAdmin ? 7 : 6} className="text-center text-slate-400 py-8">Belum ada pengguna</td></tr>
               ) : (
                 users.map((u) => {
-                  const rb = ROLE_BADGE[u.role] ?? { label: u.role, variant: "default" as const };
+                  const roleLabel = u.customRole?.name ?? u.role;
                   const isSelected = selected.has(u.id);
                   return (
                     <tr key={u.id} className={`border-b border-slate-50 transition-colors ${isSelected ? "bg-blue-50" : "hover:bg-slate-50"}`}>
@@ -322,7 +319,7 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{u.division?.name ?? "—"}</td>
-                      <td className="px-4 py-3"><Badge variant={rb.variant}>{rb.label}</Badge></td>
+                      <td className="px-4 py-3"><Badge variant="default">{roleLabel}</Badge></td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => setProjectUser(u)}
@@ -367,6 +364,7 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
             form={form}
             editUser={false}
             divisions={divisions}
+            roles={roles}
             onChange={(field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))}
           />
           <div className="flex justify-end gap-2 pt-2">
@@ -383,6 +381,7 @@ export function UsersClient({ users, divisions, projects, isSuperAdmin }: Props)
             form={form}
             editUser={true}
             divisions={divisions}
+            roles={roles}
             onChange={(field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))}
           />
           <div className="flex justify-end gap-2 pt-2">

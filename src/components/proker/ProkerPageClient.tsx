@@ -50,6 +50,8 @@ type Strategy = {
 type RaciEntry = { id: string; role: string; type: "ACCOUNTABLE" | "RESPONSIBLE" | "CONSULTED" | "INFORMED" };
 type RaciMatrix = { id: string; entries: RaciEntry[] };
 
+type MenuPermission = { menu: string; canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean };
+
 interface Props {
   strategies: Strategy[];
   divisions: Division[];
@@ -57,9 +59,10 @@ interface Props {
   raciMatrix: RaciMatrix;
   userRole: string;
   userDivisionId: string | null;
+  userPermissions: MenuPermission[];
 }
 
-export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, userRole, userDivisionId }: Props) {
+export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, userRole, userDivisionId, userPermissions }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
@@ -77,7 +80,12 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; title: string; description: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isAdmin = ["SUPER_ADMIN", "ADMIN", "GENERAL_MANAGER", "DIREKTUR_BISNIS"].includes(userRole);
+  const isFullAccess = ["SUPER_ADMIN", "ADMIN"].includes(userRole);
+  const prokerPerm = userPermissions.find((p) => p.menu === "proker");
+  const canCreate = isFullAccess || !!prokerPerm?.canCreate;
+  const canEdit   = isFullAccess || !!prokerPerm?.canEdit;
+  const canDelete = isFullAccess || !!prokerPerm?.canDelete;
+  const isAdmin = canCreate || canEdit || canDelete;
 
   const allWeeks = periods.flatMap((p) => p.weeks);
 
@@ -196,7 +204,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
             <option value="">Semua Periode</option>
             {periods.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          {isAdmin && (
+          {canCreate && (
             <Button onClick={() => setAddStrategyOpen(true)} icon={<Plus className="w-4 h-4" />} size="sm">
               Strategi
             </Button>
@@ -282,7 +290,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {isAdmin && (
+                                {canCreate && (
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -292,7 +300,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                     Program Kerja
                                   </Button>
                                 )}
-                                {isAdmin && (
+                                {canDelete && (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); deleteStrategy(strategy); }}
                                     className="text-xs text-red-500 hover:text-red-700 px-2 font-medium transition-colors"
@@ -345,7 +353,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                           </div>
                                           <div className="flex items-center gap-2">
                                             <span className="text-xs text-slate-400">{pk.actionPlans.length} tasks</span>
-                                            {isAdmin && (
+                                            {canCreate && (
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -353,7 +361,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                                 icon={<Plus className="w-3 h-3" />}
                                               />
                                             )}
-                                            {isAdmin && (
+                                            {(canEdit || canDelete) && (
                                               <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
                                                 <button
                                                   onClick={(e) => { e.stopPropagation(); setEditProkerOpen(pk); }}
@@ -420,7 +428,7 @@ export function ProkerPageClient({ strategies, divisions, periods, raciMatrix, u
                                                         periodId={strategy.period.id}
                                                       />
                                                       <StatusBadge status={status} />
-                                                      {isAdmin && (
+                                                      {(canEdit || canDelete) && (
                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pl-2 border-l border-slate-200">
                                                           <button
                                                             onClick={() => setEditAPOpen({ actionPlan: ap, strategy })}

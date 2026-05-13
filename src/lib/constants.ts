@@ -79,3 +79,18 @@ export const STATUS_LABELS: Record<string, string> = {
   DONE: "Done",
   DELAY: "Delay",
 };
+
+export const MENU_ITEMS = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "proker", label: "Program Kerja" },
+  { key: "weekly", label: "Weekly Progress" },
+  { key: "reminders", label: "Pengingat SLA" },
+  { key: "master_unit_bisnis", label: "Master Data - Unit Bisnis" },
+  { key: "master_areas", label: "Master Data - Area" },
+  { key: "master_proyek", label: "Master Data - Proyek" },
+  { key: "users", label: "Manajemen Pengguna" },
+  { key: "roles", label: "Manajemen Role" },
+  { key: "settings", label: "Pengaturan" },
+] as const;
+
+export type MenuKey = (typeof MENU_ITEMS)[number]["key"];

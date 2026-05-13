@@ -15,6 +15,7 @@ export default async function DashboardLayout({
     userRole: session.user.role,
     userName: session.user.name ?? undefined,
     userDivision: session.user.divisionName,
+    userPermissions: session.user.permissions ?? [],
   };
 
   return (

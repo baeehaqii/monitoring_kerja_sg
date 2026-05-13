@@ -3,16 +3,20 @@ import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Menu } from "lucide-react";
 
+type MenuPermission = { menu: string; canView: boolean; canCreate: boolean; canEdit: boolean; canDelete: boolean };
+
 interface MobileSidebarWrapperProps {
   userRole?: string;
   userName?: string;
   userDivision?: string | null;
+  userPermissions?: MenuPermission[];
 }
 
 export function MobileSidebarWrapper({
   userRole,
   userName,
   userDivision,
+  userPermissions = [],
 }: MobileSidebarWrapperProps) {
   const [open, setOpen] = useState(false);
 
@@ -42,6 +46,7 @@ export function MobileSidebarWrapper({
           userRole={userRole}
           userName={userName}
           userDivision={userDivision}
+          userPermissions={userPermissions}
           isMobile
           onClose={() => setOpen(false)}
         />

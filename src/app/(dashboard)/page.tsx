@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
-import { isSuperAdmin, canManage } from "@/lib/permissions";
+import { isSuperAdmin, isFullAccess } from "@/lib/permissions";
 
 async function getUserAccessibleProjectIds(userId: string): Promise<string[]> {
   const records = await prisma.userProject.findMany({
@@ -86,7 +86,7 @@ async function getDashboardData(
     ...(dateFilterWhere ? { updatedAt: dateFilterWhere } : {}),
   };
 
-  const [totalActionPlans, statusCounts, recentProgress, delayedTasks, allAPs] =
+  const [totalActionPlans, statusCounts, recentProgress, delayedTasks, allAPs, deadlineAPs] =
     await Promise.all([
       prisma.actionPlan.count({ where: apWhere }),
 
@@ -171,6 +171,36 @@ async function getDashboardData(
           },
         },
       }),
+
+      // Query action plans yang punya targetDate untuk kalender deadline
+      prisma.actionPlan.findMany({
+        where: {
+          ...apWhere,
+          targetDate: { not: null },
+        },
+        select: {
+          id: true,
+          name: true,
+          targetDate: true,
+          weeklyProgress: {
+            select: { status: true },
+            orderBy: { updatedAt: "desc" },
+            take: 1,
+          },
+          programKerja: {
+            select: {
+              name: true,
+              strategy: {
+                select: {
+                  division: { select: { name: true } },
+                  project: { select: { name: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { targetDate: "asc" },
+      }),
     ]);
 
   const statusMap: Record<string, number> = {};
@@ -200,6 +230,17 @@ async function getDashboardData(
     else ds.notStarted++;
   }
 
+  // Map deadline action plans ke format DeadlineItem
+  const deadlineItems = deadlineAPs.map((ap) => ({
+    id: ap.id,
+    name: ap.name,
+    targetDate: ap.targetDate!.toISOString(),
+    status: ap.weeklyProgress[0]?.status ?? "NOT_STARTED",
+    programKerja: ap.programKerja.name,
+    division: ap.programKerja.strategy.division.name,
+    project: ap.programKerja.strategy.project?.name ?? undefined,
+  }));
+
   return {
     totalActionPlans,
     done,
@@ -210,7 +251,8 @@ async function getDashboardData(
     recentProgress,
     delayedTasks,
     divisionStats: Array.from(divMap.values()).sort((a, b) => b.total - a.total),
-    isAdmin: canManage(role),
+    isAdmin: isFullAccess(role),
+    deadlineItems,
   };
 }
 
@@ -269,6 +311,7 @@ export default async function DashboardPage(
       projects={projects}
       userName={session.user.name || "User"}
       userRole={session.user.role}
+      userRoleName={session.user.customRoleName ?? null}
       userProjects={userProjects}
       isSuperAdmin={superAdmin}
     />

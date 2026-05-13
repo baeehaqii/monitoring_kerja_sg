@@ -79,3 +79,64 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* react-day-picker overrides */
+.rdp-root {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.rdp-root .rdp-months {
+  position: relative;
+}
+
+.rdp-root .rdp-month_caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.rdp-root .rdp-dropdowns {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rdp-root .rdp-dropdowns select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.375rem 1.75rem 0.375rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236A7686' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.4rem center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  line-height: 1.4;
+}
+
+.rdp-root .rdp-dropdowns select:hover {
+  border-color: var(--secondary);
+}
+
+.rdp-root .rdp-dropdowns select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.rdp-root .rdp-chevron {
+  fill: var(--secondary);
+}
+
+/* Tambah gap antar rows kalender */
+.rdp-root .rdp-month_grid {
+  border-spacing: 0 2px;
+}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withHandler } from "@/lib/api-handler";
-import { canManage } from "@/lib/permissions";
+import { hasPermission } from "@/lib/permissions";
 
 export const GET = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
@@ -32,7 +32,7 @@ export const GET = withHandler(async (_: NextRequest, { params }: { params: Prom
 export const PUT = withHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canManage(session.user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!hasPermission(session.user, "proker", "canEdit")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json();
@@ -56,7 +56,7 @@ export const PUT = withHandler(async (req: NextRequest, { params }: { params: Pr
 export const DELETE = withHandler(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canManage(session.user.role)) {
+  if (!hasPermission(session.user, "proker", "canDelete")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

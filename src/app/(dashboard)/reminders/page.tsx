@@ -2,14 +2,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Header } from "@/components/layout/Header";
 import { RemindersClient } from "@/components/RemindersClient";
-import { isSuperAdmin, canManage } from "@/lib/permissions";
+import { isSuperAdmin, isFullAccess } from "@/lib/permissions";
 
 export default async function RemindersPage() {
   const session = await auth();
   if (!session?.user) return null;
 
   const superAdmin = isSuperAdmin(session.user.role);
-  const isAdmin = canManage(session.user.role);
+  const isAdmin = isFullAccess(session.user.role);
   const userDivisionId = session.user.divisionId;
 
   const now = new Date();

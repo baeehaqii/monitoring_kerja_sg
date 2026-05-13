@@ -2,33 +2,35 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  addMonths, 
-  subMonths, 
-  eachDayOfInterval, 
-  isSameMonth, 
-  isSameDay, 
-  startOfWeek, 
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  subMonths,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  startOfWeek,
   endOfWeek,
   isToday,
   isWithinInterval,
   parseISO
 } from "date-fns";
 import { id } from "date-fns/locale";
-import { 
-  CalendarDays, 
-  ChevronRight, 
-  CheckCircle2, 
-  Clock, 
-  LayoutList, 
-  CalendarIcon, 
+import {
+  CalendarDays,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  LayoutList,
+  CalendarIcon,
   LayoutGrid,
   ChevronLeft,
   GanttChart,
-  Rows
+  Rows,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { formatDate } from "@/lib/utils";
@@ -51,6 +53,7 @@ type WeekItem = {
 export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
   const [view, setView] = useState<"card" | "list" | "calendar" | "timeline">("card");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showPastMonths, setShowPastMonths] = useState(false);
 
   const today = new Date();
 
@@ -70,16 +73,28 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
     {}
   );
 
+  // A period is "past" if every week in it ended before today
+  const isPastPeriod = (periodWeeks: typeof parsedWeeks) =>
+    periodWeeks.every((w) => w.parsedEnd < today);
+
+  const visibleGroupedByPeriod = showPastMonths
+    ? groupedByPeriod
+    : Object.fromEntries(
+      Object.entries(groupedByPeriod).filter(([, weeks]) => !isPastPeriod(weeks))
+    );
+
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
 
   const renderCardView = () => {
-    if (Object.keys(groupedByPeriod).length === 0) {
+    if (Object.keys(visibleGroupedByPeriod).length === 0) {
       return (
         <Card>
           <p className="text-center text-slate-400 py-10 text-sm">
-            Belum ada periode. Tambahkan periode di Pengaturan.
+            {Object.keys(groupedByPeriod).length === 0
+              ? "Belum ada periode. Tambahkan periode di Pengaturan."
+              : "Semua bulan sudah lewat. Klik ikon mata untuk menampilkan."}
           </p>
         </Card>
       );
@@ -87,7 +102,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
 
     return (
       <div className="space-y-6 mt-4">
-        {Object.entries(groupedByPeriod).map(([periodName, periodWeeks]) => (
+        {Object.entries(visibleGroupedByPeriod).map(([periodName, periodWeeks]) => (
           <div key={periodName}>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
               <CalendarDays className="w-3.5 h-3.5" /> {periodName}
@@ -101,11 +116,10 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                 return (
                   <Link key={week.id} href={`/weekly/${week.id}`}>
                     <div
-                      className={`p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
-                        isCurrent
+                      className={`p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${isCurrent
                           ? "bg-[#0f52ba] text-white border-[#0d47a1] shadow-sm"
                           : "bg-white border-slate-200 hover:border-[#0f52ba]/30"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -154,7 +168,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
   const renderListView = () => {
     return (
       <div className="space-y-6 mt-4">
-        {Object.entries(groupedByPeriod).map(([periodName, periodWeeks]) => (
+        {Object.entries(visibleGroupedByPeriod).map(([periodName, periodWeeks]) => (
           <Card key={periodName} className="p-0 overflow-hidden">
             <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center">
               <CalendarDays className="w-4 h-4 text-slate-500 mr-2" />
@@ -164,7 +178,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
               {periodWeeks.map(week => {
                 const isCurrent = today >= week.parsedStart && today <= week.parsedEnd;
                 const hasProgress = week._count.weeklyProgress > 0;
-                
+
                 return (
                   <Link key={week.id} href={`/weekly/${week.id}`} className="block hover:bg-slate-50 transition-colors">
                     <div className="px-4 py-3 sm:flex items-center justify-between">
@@ -207,7 +221,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
     const monthEnd = endOfMonth(currentDate);
     const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
-    
+
     const dateFormat = "d";
     const days = eachDayOfInterval({ start: startDate, end: endDate });
 
@@ -246,14 +260,14 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
           {days.map((day, idx) => {
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isCurrDay = isToday(day);
-            
+
             const activeWeeks = parsedWeeks.filter(w =>
               day >= w.parsedStart && day <= w.parsedEnd
             );
 
             return (
-              <div 
-                key={day.toString()} 
+              <div
+                key={day.toString()}
                 className={`min-h-[100px] p-1.5 border-b border-r border-slate-100 transition-colors ${!isCurrentMonth ? 'bg-slate-50/50' : 'bg-white hover:bg-slate-50'} ${idx % 7 === 6 ? 'border-r-0' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -261,7 +275,7 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                     {format(day, dateFormat)}
                   </span>
                 </div>
-                
+
                 <div className="space-y-1 mt-1">
                   {activeWeeks.map(week => {
                     const hasProgress = week._count.weeklyProgress > 0;
@@ -347,8 +361,8 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                             <span className="text-sm font-medium text-slate-900 truncate">Week {week.weekNumber}</span>
                           </Link>
                           <div className="text-[10px] text-slate-500 truncate ml-4 flex gap-2">
-                             <span>{format(week.parsedStart,"d MMM")} - {format(week.parsedEnd,"d MMM")}</span>
-                             {hasProgress && <span className="text-green-600 font-medium">({week._count.weeklyProgress})</span>}
+                            <span>{format(week.parsedStart, "d MMM")} - {format(week.parsedEnd, "d MMM")}</span>
+                            {hasProgress && <span className="text-green-600 font-medium">({week._count.weeklyProgress})</span>}
                           </div>
                         </div>
                       </div>
@@ -367,13 +381,13 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                   const isCurrObj = isToday(day);
                   return (
                     <div key={dIdx} className={`w-10 shrink-0 border-r border-slate-200 flex flex-col items-center justify-center ${isWknd ? 'bg-slate-100/50' : ''}`}>
-                      <span className={`text-[10px] font-medium uppercase ${isWknd ? 'text-slate-400' : 'text-slate-500'} ${isCurrObj ? 'text-[#0f52ba] font-bold':''}`}>{format(day, 'eee', {locale:id}).substring(0,3)}</span>
+                      <span className={`text-[10px] font-medium uppercase ${isWknd ? 'text-slate-400' : 'text-slate-500'} ${isCurrObj ? 'text-[#0f52ba] font-bold' : ''}`}>{format(day, 'eee', { locale: id }).substring(0, 3)}</span>
                       <span className={`text-xs ${isCurrObj ? 'bg-[#0f52ba] text-white rounded-full w-5 h-5 flex items-center justify-center -mt-0.5' : (isWknd ? 'text-slate-500' : 'text-slate-700 font-medium')}`}>{format(day, 'd')}</span>
                     </div>
                   );
                 })}
               </div>
-              
+
               <div className="flex-1 flex pointer-events-auto">
                 <div className="absolute inset-x-0 inset-y-0 mt-[45px] flex pointer-events-none z-0">
                   {daysInMonth.map((day, dIdx) => (
@@ -385,11 +399,11 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                   {Object.entries(groupedVisible).map(([periodName, periodWeeks]) => (
                     <div key={periodName} className="flex flex-col">
                       <div className="h-8 border-b border-slate-100/0"></div>
-                      
+
                       {periodWeeks.map(week => {
                         const startObj = week.parsedStart;
                         const endObj = week.parsedEnd;
-                        
+
                         const visibleStart = startObj < monthStart ? monthStart : startObj;
                         const visibleEnd = endObj > monthEnd ? monthEnd : endObj;
 
@@ -413,8 +427,8 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
                             <Link
                               href={`/weekly/${week.id}`}
                               className="absolute top-2 h-7 rounded bg-[#0f52ba]/10 border border-[#0f52ba]/30 shadow-sm flex items-center px-2 text-[10px] font-semibold text-[#0f52ba] hover:bg-[#0f52ba]/20 hover:border-[#0f52ba] transition-all overflow-hidden whitespace-nowrap"
-                              style={{ 
-                                left: `${leftPos}px`, 
+                              style={{
+                                left: `${leftPos}px`,
                                 width: `${width}px`,
                                 marginLeft: leftPos > 0 ? '2px' : '0px',
                                 marginRight: '2px',
@@ -446,51 +460,62 @@ export default function WeeklyViewsClient({ weeks }: { weeks: WeekItem[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-4">
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-          <button
-            onClick={() => setView("card")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "card"
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            <span className="hidden sm:inline">Cards</span>
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "list"
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-            }`}
-          >
-            <LayoutList className="w-4 h-4" />
-            <span className="hidden sm:inline">List</span>
-          </button>
-          <button
-            onClick={() => setView("calendar")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "calendar"
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-            }`}
-          >
-            <CalendarIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Calendar</span>
-          </button>
-          <button
-            onClick={() => setView("timeline")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === "timeline"
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-            }`}
-          >
-            <Rows className="w-4 h-4" />
-            <span className="hidden sm:inline">Timeline</span>
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <button
+              onClick={() => setView("card")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${view === "card"
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${view === "list"
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                }`}
+            >
+              <LayoutList className="w-4 h-4" />
+              <span className="hidden sm:inline">List</span>
+            </button>
+            <button
+              onClick={() => setView("calendar")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${view === "calendar"
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                }`}
+            >
+              <CalendarIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </button>
+            <button
+              onClick={() => setView("timeline")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${view === "timeline"
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                }`}
+            >
+              <Rows className="w-4 h-4" />
+              <span className="hidden sm:inline">Timeline</span>
+            </button>
+          </div>
+          {/* Toggle tampilkan bulan lampau — hanya relevan untuk card & list */}
+          {(view === "card" || view === "list") && (
+            <button
+              onClick={() => setShowPastMonths((v) => !v)}
+              title={showPastMonths ? "Sembunyikan bulan lampau" : "Tampilkan bulan lampau"}
+              className={`p-2 rounded-lg border transition-colors ${showPastMonths
+                  ? "bg-[#0f52ba]/10 border-[#0f52ba]/30 text-[#0f52ba]"
+                  : "bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60"
+                }`}
+            >
+              {showPastMonths ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
+          )}
         </div>
       </div>
 
